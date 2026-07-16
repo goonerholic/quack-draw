@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="robots" content="noindex, nofollow">
+<title>🦆 꽥드로우</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { touch-action: manipulation; overscroll-behavior: none; height: 100%; }
+  body {
+    font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    background: linear-gradient(165deg, #fff6c9 0%, #ffd98e 40%, #ffb86c 75%, #8ec9ff 100%);
+    background-attachment: fixed;
+    min-height: 100%;
+    color: #4a3b1a;
+    text-align: center;
+    overflow-x: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  #fx { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 900; }
+  .wrap { max-width: 460px; margin: 0 auto; padding: 14px 14px 28px; position: relative; z-index: 1; }
+
+  /* ── 헤더 ── */
+  header { padding: 8px 0 4px; }
+  .logo { font-size: 30px; font-weight: 900; letter-spacing: -1px;
+    color: #b25c00; text-shadow: 0 2px 0 #fff3c4, 0 4px 8px rgba(0,0,0,.12); }
+  .logo .q { color: #ff7a00; }
+  .sub { font-size: 12px; color: #a5762e; margin-top: 2px; }
+
+  /* ── 오리 + 말풍선 ── */
+  .duckrow { display: flex; align-items: flex-end; gap: 8px; margin: 10px 2px 8px; }
+  .duck { font-size: 58px; line-height: 1; flex: 0 0 auto;
+    filter: drop-shadow(0 6px 8px rgba(0,0,0,.18)); transition: transform .15s; }
+  .duck.talk { animation: waddle .5s ease-in-out; }
+  .duck.happy { animation: jump .6s ease; }
+  @keyframes waddle { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-9deg)} 75%{transform:rotate(9deg)} }
+  @keyframes jump { 0%,100%{transform:translateY(0) scale(1)} 40%{transform:translateY(-22px) scale(1.15)} }
+  .duckwrap { position: relative; flex: 0 0 auto; }
+  .mood { position: absolute; top: -8px; right: -12px; font-size: 26px; line-height: 1;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,.22)); animation: pop .25s ease; }
+  @keyframes pop { 0%{transform:scale(.4)} 70%{transform:scale(1.2)} 100%{transform:scale(1)} }
+  .bubble { position: relative; background: #fff; color: #4a3b1a; border-radius: 16px;
+    padding: 10px 14px; font-size: 15px; font-weight: 700; text-align: left; flex: 1;
+    box-shadow: 0 4px 12px rgba(0,0,0,.12); min-height: 44px; display: flex; align-items: center; }
+  .bubble::before { content: ""; position: absolute; left: -8px; bottom: 14px;
+    border: 8px solid transparent; border-right-color: #fff; border-left: 0; }
+  .bubble b { color: #ff7a00; }
+
+  /* ── 미션 ── */
+  .mission { background: rgba(255,255,255,.72); border-radius: 14px; padding: 10px 12px;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .mission .want { font-size: 14px; font-weight: 700; }
+  .mission .want em { font-style: normal; color: #ff7a00; font-size: 20px; font-weight: 900; }
+  .timer { font-size: 22px; font-weight: 900; min-width: 54px; }
+  .timer .bar { height: 6px; background: #ffe3a1; border-radius: 4px; overflow: hidden; margin-top: 3px; }
+  .timer .bar i { display: block; height: 100%; width: 100%; background: #ff9a3d;
+    transition: width .25s linear; }
+  .timer.low { color: #e23b3b; }
+  .timer.low .bar i { background: #e23b3b; }
+
+  /* ── 캔버스 ── */
+  .board { position: relative; }
+  canvas.pad { width: 100%; aspect-ratio: 1/1; background: #fffef8; border-radius: 18px;
+    box-shadow: inset 0 0 0 3px #ffd98e, 0 8px 20px rgba(0,0,0,.14); touch-action: none;
+    display: block; cursor: crosshair; }
+  .hintghost { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 74px; opacity: .10; pointer-events: none; }
+
+  /* ── 추측 리스트 ── */
+  .guesses { margin: 10px 0 4px; min-height: 30px; display: flex; flex-direction: column; gap: 5px; }
+  .g { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .g .name { flex: 0 0 92px; text-align: right; font-weight: 700; color: #6b5220;
+    white-space: nowrap; font-size: 12.5px; }
+  .g .track { flex: 1; height: 12px; background: rgba(255,255,255,.6); border-radius: 6px; overflow: hidden; }
+  .g .track i { display: block; height: 100%; width: 0; background: linear-gradient(90deg,#ffcf6b,#ff8a3d);
+    border-radius: 6px; transition: width .2s; }
+  .g.hit .name { color: #14a04b; }
+  .g.hit .track i { background: linear-gradient(90deg,#7be495,#14a04b); }
+  .g .pct { flex: 0 0 34px; text-align: left; color: #8a6a2c; }
+
+  /* ── 버튼 ── */
+  .btns { display: flex; gap: 8px; margin-top: 8px; }
+  button { flex: 1; border: 0; border-radius: 14px; padding: 13px 0; font-size: 15px; font-weight: 800;
+    font-family: inherit; color: #7a4a00; background: #ffe6a8; box-shadow: 0 3px 0 #e8c46e;
+    cursor: pointer; transition: transform .06s; }
+  button:active { transform: translateY(2px); box-shadow: 0 1px 0 #e8c46e; }
+  button.primary { color: #fff; background: #ff8a3d; box-shadow: 0 3px 0 #d96a1f; }
+  button.ghost { background: rgba(255,255,255,.6); box-shadow: 0 3px 0 rgba(0,0,0,.08); }
+
+  .score { display: flex; align-items: center; justify-content: center; gap: 6px;
+    margin: 12px 0 2px; font-size: 15px; font-weight: 800; color: #7a4a00; }
+  .score .stars { font-size: 18px; letter-spacing: 1px; }
+
+  .loading { padding: 40px 0; font-size: 15px; color: #8a6a2c; }
+  .spin { display: inline-block; animation: sp 1s linear infinite; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  .foot { margin-top: 16px; font-size: 11px; color: #a5762e; opacity: .8; }
+  .foot a { color: #b25c00; }
+</style>
+</head>
+<body>
+<canvas id="fx"></canvas>
+<div class="wrap">
+  <header>
+    <div class="logo"><span class="q">꽥</span>드로우</div>
+    <div class="sub">오리가 알아맞히는 그림놀이 🦆</div>
+  </header>
+
+  <div id="app" class="loading">
+    <span class="spin">🦆</span> 오리를 깨우는 중…
+  </div>
+
+  <template id="gametpl">
+    <div class="duckrow">
+      <div class="duckwrap">
+        <div class="duck" id="duck">🦆</div>
+        <div class="mood" id="mood">👀</div>
+      </div>
+      <div class="bubble" id="say">무슨 그림일까~? 오리가 맞혀볼게! 👀</div>
+    </div>
+
+    <div class="mission">
+      <div class="want">🎨 이걸 그려봐! <em id="target">?</em></div>
+      <div class="timer" id="timer">20<div class="bar"><i id="tbar"></i></div></div>
+    </div>
+
+    <div class="board">
+      <canvas class="pad" id="pad"></canvas>
+      <div class="hintghost" id="ghost"></div>
+    </div>
+
+    <div class="guesses" id="guesses"></div>
+
+    <div class="btns">
+      <button class="ghost" id="clear">🧽 지우기</button>
+      <button class="ghost" id="skip">➡️ 다른 그림</button>
+      <button class="primary" id="sound">🔊 음성</button>
+    </div>
+
+    <div class="score">
+      <span>맞힌 그림</span>
+      <span class="stars" id="stars"></span>
+      <span id="scoren">0개</span>
+    </div>
+  </template>
+
+  <div class="foot">
+    다영이 전용 · 브라우저 안에서 도는 초경량 인식 모델 🧠
+  </div>
+</div>
+
+<script src="quack-model.js"></script>
+<script>
+(function () {
+  "use strict";
+  const app = document.getElementById("app");
+  const fx = document.getElementById("fx");
+
+  // ── 이모지 힌트 ──
+  const EMOJI = { duck:"🦆", cat:"🐱", fish:"🐟", flower:"🌷", tree:"🌳",
+    house:"🏠", star:"⭐", car:"🚗", umbrella:"☂️", butterfly:"🦋",
+    apple:"🍎", "ice cream":"🍦" };
+
+  fetch("model.json").then(r => r.json()).then(start).catch(e => {
+    app.innerHTML = "😢 모델을 못 불러왔어요.<br><small>" + e + "</small>";
+  });
+
+  function start(modelJson) {
+    const M = QuackModel.prepare(modelJson);
+
+    // 게임 UI 심기
+    const tpl = document.getElementById("gametpl");
+    app.replaceWith(tpl.content.cloneNode(true));
+
+    const pad = document.getElementById("pad");
+    const ctx = pad.getContext("2d");
+    const duck = document.getElementById("duck");
+    const mood = document.getElementById("mood");
+    const say = document.getElementById("say");
+    const targetEl = document.getElementById("target");
+    const ghost = document.getElementById("ghost");
+    const guessesEl = document.getElementById("guesses");
+    const timerEl = document.getElementById("timer");
+    const tbar = document.getElementById("tbar");
+    const starsEl = document.getElementById("stars");
+    const scoreN = document.getElementById("scoren");
+
+    // ── 음성(TTS): 오리가 소리내어 맞힌다 ──
+    let voiceOn = true;
+    const synth = window.speechSynthesis || null;
+    let koVoice = null;
+    function loadVoices() {
+      if (!synth) return;
+      const vs = synth.getVoices();
+      koVoice = vs.find(v => /ko/i.test(v.lang)) || koVoice;
+    }
+    if (synth) { loadVoices(); if ("onvoiceschanged" in synth) synth.onvoiceschanged = loadVoices; }
+    function speakOut(text) {
+      if (!voiceOn || !synth) return;
+      try {
+        synth.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = "ko-KR"; if (koVoice) u.voice = koVoice;
+        u.pitch = 1.4; u.rate = 1.02; u.volume = 1;
+        synth.speak(u);
+      } catch (e) {}
+    }
+    function setMood(emoji) {
+      if (mood.textContent === emoji) return;
+      mood.textContent = emoji;
+      mood.style.animation = "none"; void mood.offsetWidth; mood.style.animation = "";
+    }
+
+    // ── 캔버스 셋업 (고해상도) ──
+    let W = 0, H = 0, DPR = 1;
+    function fitCanvas() {
+      const rect = pad.getBoundingClientRect();
+      DPR = Math.min(window.devicePixelRatio || 1, 2);
+      W = rect.width; H = rect.height;
+      pad.width = Math.round(W * DPR);
+      pad.height = Math.round(H * DPR);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      ctx.lineWidth = Math.max(6, W * 0.03);
+      ctx.lineCap = "round"; ctx.lineJoin = "round";
+      ctx.strokeStyle = "#3a2c10";
+      redraw();
+    }
+    function redraw() {
+      ctx.clearRect(0, 0, W, H);
+      for (const s of strokes) {
+        if (s[0].length < 1) continue;
+        ctx.beginPath();
+        ctx.moveTo(s[0][0], s[1][0]);
+        for (let i = 1; i < s[0].length; i++) ctx.lineTo(s[0][i], s[1][i]);
+        if (s[0].length === 1) ctx.lineTo(s[0][0] + 0.1, s[1][0] + 0.1);
+        ctx.stroke();
+      }
+    }
+    window.addEventListener("resize", fitCanvas);
+
+    // ── 그리기 상태 ──
+    let strokes = [];      // [ [ [x..],[y..] ], ... ]
+    let drawing = false;
+    let cur = null;
+    let dirty = false;
+
+    function pos(e) {
+      const rect = pad.getBoundingClientRect();
+      const t = e.touches ? e.touches[0] : e;
+      return [t.clientX - rect.left, t.clientY - rect.top];
+    }
+    function down(e) {
+      if (roundOver) return;
+      e.preventDefault();
+      drawing = true; cur = [[], []]; strokes.push(cur);
+      const [x, y] = pos(e); cur[0].push(x); cur[1].push(y);
+      ghost.style.display = "none";
+      redraw();
+    }
+    function move(e) {
+      if (!drawing) return;
+      e.preventDefault();
+      const [x, y] = pos(e);
+      const lx = cur[0][cur[0].length - 1], ly = cur[1][cur[1].length - 1];
+      if (Math.hypot(x - lx, y - ly) < 1.2) return;
+      cur[0].push(x); cur[1].push(y); dirty = true;
+      ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(x, y); ctx.stroke();
+    }
+    function up() { drawing = false; dirty = true; }
+
+    pad.addEventListener("mousedown", down);
+    pad.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+    pad.addEventListener("touchstart", down, { passive: false });
+    pad.addEventListener("touchmove", move, { passive: false });
+    pad.addEventListener("touchend", up);
+
+    // ── 추론 루프 ──
+    // 오리는 문제를 내지 않는다. 그림을 보다가, 알 것 같으면 "아! XXX지?" 하고 맞힌다.
+    // 그림의 점 개수와 실제 크기(바운딩박스). 낙서 몇 점만으로 맞혔다고 하지 않게 게이트.
+    function extent() {
+      let minx = Infinity, maxx = -Infinity, miny = Infinity, maxy = -Infinity, n = 0;
+      for (const s of strokes) for (let i = 0; i < s[0].length; i++) {
+        n++; const x = s[0][i], y = s[1][i];
+        if (x < minx) minx = x; if (x > maxx) maxx = x;
+        if (y < miny) miny = y; if (y > maxy) maxy = y;
+      }
+      return n ? { n, ext: Math.max(maxx - minx, maxy - miny) } : { n: 0, ext: 0 };
+    }
+    const SURE = 0.45;   // 이 정도 확신하면 소리내어 추측
+    const WIN_P = 0.55;  // 정답 확정 기준
+    let lastSpoken = null;
+    setInterval(() => {
+      if (!dirty || roundOver) return;
+      dirty = false;
+      const ex = extent();
+      // 충분히 그려야(점 8개 이상 + 캔버스의 18% 이상 크기) 판단 시작
+      if (ex.n < 8 || ex.ext < W * 0.18) { renderGuesses([]); thinking(); return; }
+      const img = QuackModel.rasterize(strokes);
+      const probs = QuackModel.predict(M, img);
+      const top = QuackModel.topk(M, probs, 3);
+      renderGuesses(top);
+      const g = top[0];
+      if (!g) return;
+      if (g.cat === target.cat && g.p > WIN_P) { win(); return; }
+      if (g.p > SURE) {
+        // 확신하는 추측 → 소리내어 맞히기 (추측이 바뀔 때만)
+        if (g.cat !== lastSpoken) { lastSpoken = g.cat; guessOut(g); }
+      } else {
+        // 아직 모르겠음 → 갸우뚱
+        lastSpoken = null;
+        thinking();
+      }
+    }, 280);
+
+    // 갸우뚱하는 표정과 말
+    const PUZZLE = ["으음… 이게 뭐지? 🤔", "무슨 그림일까~? 🤔", "조금만 더 그려줘! 👀"];
+    let puzzleIdx = 0;
+    function thinking() {
+      setMood("🤔");
+      if (duck.className.indexOf("happy") === -1) duck.className = "duck";
+      const msg = PUZZLE[Math.min(puzzleIdx, PUZZLE.length - 1)];
+      if (say.textContent !== msg) say.innerHTML = msg;
+    }
+    // 알 것 같을 때 — 소리내어 추측
+    function guessOut(g) {
+      setMood("💡");
+      say.innerHTML = "아! 혹시 <b>" + g.label + "</b> 아니야?";
+      duck.className = "duck talk";
+      clearTimeout(sayTO);
+      sayTO = setTimeout(() => { if (!roundOver) duck.className = "duck"; }, 500);
+      quack(false);
+      speakOut("아! 혹시 " + g.label + " 아니야?");
+    }
+
+    function renderGuesses(top) {
+      guessesEl.innerHTML = "";
+      top.forEach(g => {
+        const row = document.createElement("div");
+        row.className = "g" + (g.cat === target.cat ? " hit" : "");
+        row.innerHTML =
+          '<span class="name">' + (EMOJI[g.cat] || "") + " " + g.label + '</span>' +
+          '<span class="track"><i style="width:' + Math.round(g.p * 100) + '%"></i></span>' +
+          '<span class="pct">' + Math.round(g.p * 100) + '%</span>';
+        guessesEl.appendChild(row);
+      });
+    }
+
+    // ── 라운드 ──
+    let target = null, roundOver = false, score = 0;
+    let timeLeft = 0, timerId = null;
+    const ROUND_SEC = 25;
+    let bag = [];
+
+    function nextTarget() {
+      if (bag.length === 0) {
+        bag = M.cats.map((c, i) => ({ cat: c, label: M.labels[i], i }));
+        // 셔플
+        for (let i = bag.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [bag[i], bag[j]] = [bag[j], bag[i]];
+        }
+      }
+      return bag.pop();
+    }
+
+    function newRound() {
+      strokes = []; redraw(); renderGuesses([]);
+      roundOver = false; dirty = false; lastSpoken = null;
+      puzzleIdx = (puzzleIdx + 1) % PUZZLE.length;
+      target = nextTarget();
+      // 문제는 화면에만 표시된다 (오리는 답을 모른 채 맞히는 역할)
+      targetEl.textContent = (EMOJI[target.cat] || "") + " " + target.label;
+      ghost.textContent = EMOJI[target.cat] || "";
+      ghost.style.display = "flex";
+      setMood("👀");
+      duck.className = "duck";
+      say.innerHTML = "무슨 그림일까~? 오리가 맞혀볼게! 👀";
+      startTimer();
+    }
+
+    function startTimer() {
+      timeLeft = ROUND_SEC;
+      clearInterval(timerId);
+      updateTimer();
+      timerId = setInterval(() => {
+        timeLeft -= 1; updateTimer();
+        if (timeLeft <= 0) timeUp();
+      }, 1000);
+    }
+    function updateTimer() {
+      timerEl.firstChild.textContent = Math.max(0, timeLeft);
+      tbar.style.width = (Math.max(0, timeLeft) / ROUND_SEC * 100) + "%";
+      timerEl.classList.toggle("low", timeLeft <= 7);
+    }
+
+    function win() {
+      if (roundOver) return;
+      roundOver = true; clearInterval(timerId);
+      score += 1; updateScore();
+      setMood("🎉");
+      duck.className = "duck happy";
+      say.innerHTML = "아! <b>" + target.label + "</b> 맞지?! 정답이야! 🎉";
+      quack(true); confetti();
+      speakOut(target.label + " 맞지? 정답이야!");
+      setTimeout(newRound, 2200);
+    }
+    function timeUp() {
+      if (roundOver) return;
+      roundOver = true; clearInterval(timerId);
+      setMood("😵");
+      say.innerHTML = "으음… 모르겠다! <b>" + target.label + "</b> 였구나! 😵";
+      speakOut("으음 모르겠다! " + target.label + " 였구나!");
+      setTimeout(newRound, 2200);
+    }
+    function updateScore() {
+      scoreN.textContent = score + "개";
+      starsEl.textContent = "⭐".repeat(Math.min(score, 10)) + (score > 10 ? "…" : "");
+    }
+
+    let sayTO = null;
+
+    // ── 버튼 ──
+    document.getElementById("clear").onclick = () => {
+      strokes = []; redraw(); renderGuesses([]); lastSpoken = null;
+      ghost.style.display = "flex";
+      setMood("👀");
+      say.innerHTML = "다시 그려볼까? 👀";
+    };
+    document.getElementById("skip").onclick = () => {
+      if (roundOver) return;
+      clearInterval(timerId); roundOver = true;
+      setMood("🌀");
+      say.innerHTML = "좋아, 다른 그림! 🌀";
+      setTimeout(newRound, 500);
+    };
+    document.getElementById("sound").onclick = (e) => {
+      voiceOn = !voiceOn;
+      e.currentTarget.textContent = voiceOn ? "🔊 음성" : "🔇 음성";
+      if (!voiceOn && synth) synth.cancel();
+    };
+
+    // ── 사운드 (간단 신디사이저 꽥) ──
+    let AC = null;
+    function quack(happy) {
+      if (!voiceOn) return;
+      try {
+        AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+        const t0 = AC.currentTime;
+        const o = AC.createOscillator(), g = AC.createGain();
+        o.type = "sawtooth";
+        o.frequency.setValueAtTime(happy ? 620 : 420, t0);
+        o.frequency.exponentialRampToValueAtTime(happy ? 300 : 240, t0 + 0.18);
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.18, t0 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + (happy ? 0.3 : 0.2));
+        o.connect(g); g.connect(AC.destination);
+        o.start(t0); o.stop(t0 + 0.32);
+      } catch (e) {}
+    }
+
+    // ── 색종이 ──
+    const fctx = fx.getContext("2d");
+    let parts = [];
+    function sizeFx() { fx.width = innerWidth; fx.height = innerHeight; }
+    sizeFx(); window.addEventListener("resize", sizeFx);
+    function confetti() {
+      const cols = ["#ff7a3d","#ffd166","#7be495","#61b8ff","#c792ff","#ff8fab"];
+      for (let i = 0; i < 90; i++) parts.push({
+        x: innerWidth / 2, y: innerHeight * 0.3,
+        vx: (Math.random() - 0.5) * 11, vy: Math.random() * -12 - 3,
+        g: 0.4 + Math.random() * 0.2, s: 5 + Math.random() * 7,
+        c: cols[i % cols.length], r: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4,
+        life: 90,
+      });
+    }
+    (function loop() {
+      fctx.clearRect(0, 0, fx.width, fx.height);
+      parts = parts.filter(p => p.life-- > 0);
+      for (const p of parts) {
+        p.vy += p.g; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+        fctx.save(); fctx.translate(p.x, p.y); fctx.rotate(p.r);
+        fctx.fillStyle = p.c; fctx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * 0.6);
+        fctx.restore();
+      }
+      requestAnimationFrame(loop);
+    })();
+
+    // 시작
+    fitCanvas();
+    updateScore();
+    newRound();
+
+    // 화면 밖 탭으로 오디오 활성화 (모바일)
+    document.body.addEventListener("touchstart", () => {
+      if (AC && AC.state === "suspended") AC.resume();
+    }, { once: true });
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+# 학습 산출물 (모델 검증용, 배포 불필요)
+jscheck.json
+tools/train.log
+__pycache__/
