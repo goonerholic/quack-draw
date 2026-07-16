@@ -32,15 +32,36 @@
   /* ── 오리 + 말풍선 ── */
   .duckrow { display: flex; align-items: flex-end; gap: 8px; margin: 10px 2px 8px; }
   .duck { font-size: 58px; line-height: 1; flex: 0 0 auto;
-    filter: drop-shadow(0 6px 8px rgba(0,0,0,.18)); transition: transform .15s; }
+    filter: drop-shadow(0 6px 8px rgba(0,0,0,.18));
+    animation: idle 3.2s ease-in-out infinite; transform-origin: 50% 92%; }
   .duck.talk { animation: waddle .5s ease-in-out; }
-  .duck.happy { animation: jump .6s ease; }
-  @keyframes waddle { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-9deg)} 75%{transform:rotate(9deg)} }
-  @keyframes jump { 0%,100%{transform:translateY(0) scale(1)} 40%{transform:translateY(-22px) scale(1.15)} }
+  .duck.happy { animation: jump .7s cubic-bezier(.3,1.4,.5,1); }
+  @keyframes idle { 0%,100%{transform:translateY(0) rotate(-1.5deg)} 50%{transform:translateY(-4px) rotate(1.5deg)} }
+  @keyframes waddle { 0%,100%{transform:rotate(0)} 20%{transform:rotate(-11deg)} 60%{transform:rotate(11deg)} 80%{transform:rotate(-5deg)} }
+  @keyframes jump { 0%,100%{transform:translateY(0) scale(1)} 35%{transform:translateY(-26px) scale(1.18)} 60%{transform:translateY(0) scale(1)} 75%{transform:translateY(-10px) scale(1.08)} }
   .duckwrap { position: relative; flex: 0 0 auto; }
   .mood { position: absolute; top: -8px; right: -12px; font-size: 26px; line-height: 1;
-    filter: drop-shadow(0 2px 3px rgba(0,0,0,.22)); animation: pop .25s ease; }
-  @keyframes pop { 0%{transform:scale(.4)} 70%{transform:scale(1.2)} 100%{transform:scale(1)} }
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,.22)); }
+  .mood[data-m=look]  { animation: mLook 2.6s ease-in-out infinite; }
+  .mood[data-m=think] { animation: mThink 1.1s ease-in-out infinite; }
+  .mood[data-m=idea]  { animation: mIdea .9s ease-in-out infinite; }
+  .mood[data-m=party] { animation: mParty .6s ease; }
+  .mood[data-m=dizzy] { animation: mDizzy .85s linear infinite; }
+  .mood[data-m=spin]  { animation: mSpin .7s linear infinite; }
+  @keyframes mLook  { 0%{transform:scale(.4)} 22%{transform:scale(1.15)} 44%,100%{transform:scale(1)} }
+  @keyframes mThink { 0%{transform:rotate(-12deg) scale(1)} 50%{transform:rotate(12deg) scale(1.06)} 100%{transform:rotate(-12deg) scale(1)} }
+  @keyframes mIdea  { 0%,100%{transform:scale(1); filter:drop-shadow(0 0 0 rgba(255,210,60,0))} 50%{transform:scale(1.18); filter:drop-shadow(0 0 9px rgba(255,200,40,.9))} }
+  @keyframes mParty { 0%{transform:scale(.3) rotate(-25deg)} 60%{transform:scale(1.3) rotate(10deg)} 100%{transform:scale(1) rotate(0)} }
+  @keyframes mDizzy { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
+  @keyframes mSpin  { 0%{transform:rotate(0) scale(1)} 100%{transform:rotate(-360deg) scale(1)} }
+  /* 진입 연출 (요소별 살짝 시차) */
+  @keyframes riseIn { from{opacity:0; transform:translateY(16px)} to{opacity:1; transform:translateY(0)} }
+  .duckrow,.mission,.board,.guesses,.btns,.score { animation: riseIn .5s both; }
+  .duckrow{animation-delay:.04s} .mission{animation-delay:.11s} .board{animation-delay:.18s}
+  .guesses{animation-delay:.25s} .btns{animation-delay:.30s} .score{animation-delay:.34s}
+  /* 말풍선 팝 (내용 바뀔 때) */
+  .bubble.say-pop { animation: sayPop .28s ease; }
+  @keyframes sayPop { 0%{transform:scale(.96)} 45%{transform:scale(1.03)} 100%{transform:scale(1)} }
   .bubble { position: relative; background: #fff; color: #4a3b1a; border-radius: 16px;
     padding: 10px 14px; font-size: 15px; font-weight: 700; text-align: left; flex: 1;
     box-shadow: 0 4px 12px rgba(0,0,0,.12); min-height: 44px; display: flex; align-items: center; }
@@ -57,8 +78,12 @@
   .timer .bar { height: 6px; background: #ffe3a1; border-radius: 4px; overflow: hidden; margin-top: 3px; }
   .timer .bar i { display: block; height: 100%; width: 100%; background: #ff9a3d;
     transition: width .25s linear; }
-  .timer.low { color: #e23b3b; }
+  .timer { transform-origin: 60% 50%; }
+  .timer.low { color: #e23b3b; animation: tPulse .7s ease-in-out infinite; }
+  .timer.crit { animation: tShake .4s ease-in-out infinite; }
   .timer.low .bar i { background: #e23b3b; }
+  @keyframes tPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.13)} }
+  @keyframes tShake { 0%,100%{transform:translateX(0) scale(1.08)} 25%{transform:translateX(-3px) scale(1.08)} 75%{transform:translateX(3px) scale(1.08)} }
 
   /* ── 캔버스 ── */
   .board { position: relative; }
@@ -66,16 +91,29 @@
     box-shadow: inset 0 0 0 3px #ffd98e, 0 8px 20px rgba(0,0,0,.14); touch-action: none;
     display: block; cursor: crosshair; }
   .hintghost { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    font-size: 74px; opacity: .10; pointer-events: none; }
+    font-size: 74px; opacity: .10; pointer-events: none; animation: ghostPulse 2.6s ease-in-out infinite; }
+  @keyframes ghostPulse { 0%,100%{opacity:.08; transform:scale(1)} 50%{opacity:.15; transform:scale(1.04)} }
+  .board.correct canvas.pad { animation: correctGlow .9s ease; }
+  @keyframes correctGlow {
+    0%   { box-shadow: inset 0 0 0 3px #ffd98e, 0 8px 20px rgba(0,0,0,.14); }
+    25%  { box-shadow: inset 0 0 0 5px #14a04b, 0 0 34px rgba(20,160,75,.55); }
+    100% { box-shadow: inset 0 0 0 3px #ffd98e, 0 8px 20px rgba(0,0,0,.14); }
+  }
 
   /* ── 추측 리스트 ── */
   .guesses { margin: 10px 0 4px; min-height: 30px; display: flex; flex-direction: column; gap: 5px; }
-  .g { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .g { display: flex; align-items: center; gap: 8px; font-size: 13px; transition: opacity .22s ease; }
+  .g.empty { opacity: 0; }
   .g .name { flex: 0 0 92px; text-align: right; font-weight: 700; color: #6b5220;
     white-space: nowrap; font-size: 12.5px; }
   .g .track { flex: 1; height: 12px; background: rgba(255,255,255,.6); border-radius: 6px; overflow: hidden; }
-  .g .track i { display: block; height: 100%; width: 0; background: linear-gradient(90deg,#ffcf6b,#ff8a3d);
-    border-radius: 6px; transition: width .2s; }
+  .g .track i { position: relative; display: block; height: 100%; width: 0; overflow: hidden;
+    background: linear-gradient(90deg,#ffcf6b,#ff8a3d); border-radius: 6px;
+    transition: width .25s cubic-bezier(.4,1.15,.5,1); }
+  .g.lead .track i::after { content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
+    animation: shimmer 1.3s linear infinite; }
+  @keyframes shimmer { 0%{transform:translateX(-120%)} 100%{transform:translateX(320%)} }
   .g.hit .name { color: #14a04b; }
   .g.hit .track i { background: linear-gradient(90deg,#7be495,#14a04b); }
   .g .pct { flex: 0 0 34px; text-align: left; color: #8a6a2c; }
@@ -84,14 +122,23 @@
   .btns { display: flex; gap: 8px; margin-top: 8px; }
   button { flex: 1; border: 0; border-radius: 14px; padding: 13px 0; font-size: 15px; font-weight: 800;
     font-family: inherit; color: #7a4a00; background: #ffe6a8; box-shadow: 0 3px 0 #e8c46e;
-    cursor: pointer; transition: transform .06s; }
-  button:active { transform: translateY(2px); box-shadow: 0 1px 0 #e8c46e; }
+    cursor: pointer; transition: transform .09s ease, box-shadow .09s ease, filter .15s ease; }
+  button:active { transform: translateY(3px) scale(.985); box-shadow: 0 0 0 #e8c46e; }
   button.primary { color: #fff; background: #ff8a3d; box-shadow: 0 3px 0 #d96a1f; }
+  button.primary:active { box-shadow: 0 0 0 #d96a1f; }
   button.ghost { background: rgba(255,255,255,.6); box-shadow: 0 3px 0 rgba(0,0,0,.08); }
+  @media (hover:hover) { button:hover { filter: brightness(1.05); } }
 
   .score { display: flex; align-items: center; justify-content: center; gap: 6px;
     margin: 12px 0 2px; font-size: 15px; font-weight: 800; color: #7a4a00; }
+  .score.bump { animation: scoreBump .5s ease; }
+  @keyframes scoreBump { 0%{transform:scale(1)} 30%{transform:scale(1.18)} 100%{transform:scale(1)} }
   .score .stars { font-size: 18px; letter-spacing: 1px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .001ms !important;
+      animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  }
 
   .loading { padding: 40px 0; font-size: 15px; color: #8a6a2c; }
   .spin { display: inline-block; animation: sp 1s linear infinite; }
@@ -176,6 +223,8 @@
 
     const pad = document.getElementById("pad");
     const ctx = pad.getContext("2d");
+    const board = document.querySelector(".board");
+    const scoreEl = document.querySelector(".score");
     const duck = document.getElementById("duck");
     const mood = document.getElementById("mood");
     const say = document.getElementById("say");
@@ -207,11 +256,17 @@
         synth.speak(u);
       } catch (e) {}
     }
+    const MOODMAP = { "👀": "look", "🤔": "think", "💡": "idea", "🎉": "party", "😵": "dizzy", "🌀": "spin" };
     function setMood(emoji) {
       if (mood.textContent === emoji) return;
       mood.textContent = emoji;
+      mood.setAttribute("data-m", MOODMAP[emoji] || "look");
       mood.style.animation = "none"; void mood.offsetWidth; mood.style.animation = "";
     }
+    // 말풍선: 내용 바뀔 때마다 살짝 팝
+    (new MutationObserver(() => {
+      say.classList.remove("say-pop"); void say.offsetWidth; say.classList.add("say-pop");
+    })).observe(say, { childList: true, characterData: true, subtree: true });
 
     // ── 캔버스 셋업 (고해상도) ──
     let W = 0, H = 0, DPR = 1;
@@ -335,17 +390,30 @@
       speakOut("아! 혹시 " + g.label + " 아니야?");
     }
 
-    function renderGuesses(top) {
+    // 고정 3행을 만들어두고 값만 갱신 → 막대가 부드럽게 늘고 깜빡임이 없다.
+    let gRows = null;
+    function buildRows() {
       guessesEl.innerHTML = "";
-      top.forEach(g => {
+      gRows = [];
+      for (let k = 0; k < 3; k++) {
         const row = document.createElement("div");
-        row.className = "g" + (g.cat === target.cat ? " hit" : "");
-        row.innerHTML =
-          '<span class="name">' + (EMOJI[g.cat] || "") + " " + g.label + '</span>' +
-          '<span class="track"><i style="width:' + Math.round(g.p * 100) + '%"></i></span>' +
-          '<span class="pct">' + Math.round(g.p * 100) + '%</span>';
+        row.className = "g empty";
+        row.innerHTML = '<span class="name"></span><span class="track"><i></i></span><span class="pct"></span>';
         guessesEl.appendChild(row);
-      });
+        gRows.push({ row: row, name: row.firstChild, bar: row.children[1].firstChild, pct: row.lastChild });
+      }
+    }
+    function renderGuesses(top) {
+      if (!gRows) buildRows();
+      for (let k = 0; k < 3; k++) {
+        const r = gRows[k], g = top[k];
+        if (!g) { r.row.className = "g empty"; r.bar.style.width = "0%"; continue; }
+        r.row.className = "g" + (k === 0 ? " lead" : "") + (g.cat === target.cat ? " hit" : "");
+        const label = (EMOJI[g.cat] || "") + " " + g.label;
+        if (r.name.textContent !== label) r.name.textContent = label;
+        r.bar.style.width = Math.round(g.p * 100) + "%";
+        r.pct.textContent = Math.round(g.p * 100) + "%";
+      }
     }
 
     // ── 라운드 ──
@@ -394,15 +462,17 @@
       timerEl.firstChild.textContent = Math.max(0, timeLeft);
       tbar.style.width = (Math.max(0, timeLeft) / ROUND_SEC * 100) + "%";
       timerEl.classList.toggle("low", timeLeft <= 7);
+      timerEl.classList.toggle("crit", timeLeft <= 3 && timeLeft > 0);
     }
 
     function win() {
       if (roundOver) return;
       roundOver = true; clearInterval(timerId);
-      score += 1; updateScore();
+      score += 1; updateScore(true);
       setMood("🎉");
       duck.className = "duck happy";
       say.innerHTML = "아! <b>" + target.label + "</b> 맞지?! 정답이야! 🎉";
+      if (board) { board.classList.add("correct"); setTimeout(() => board.classList.remove("correct"), 950); }
       quack(true); confetti();
       speakOut(target.label + " 맞지? 정답이야!");
       setTimeout(newRound, 2200);
@@ -415,9 +485,10 @@
       speakOut("으음 모르겠다! " + target.label + " 였구나!");
       setTimeout(newRound, 2200);
     }
-    function updateScore() {
+    function updateScore(bump) {
       scoreN.textContent = score + "개";
       starsEl.textContent = "⭐".repeat(Math.min(score, 10)) + (score > 10 ? "…" : "");
+      if (bump && scoreEl) { scoreEl.classList.remove("bump"); void scoreEl.offsetWidth; scoreEl.classList.add("bump"); }
     }
 
     let sayTO = null;
