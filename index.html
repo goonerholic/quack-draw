@@ -102,20 +102,6 @@
   .duck.s-spin .dk-all { animation: dTwirl .7s ease-in-out; }
   @keyframes dTwirl { 0%{transform:rotate(0) scale(1)} 50%{transform:rotate(180deg) scale(.88)} 100%{transform:rotate(360deg) scale(1)} }
   .duckwrap { position: relative; flex: 0 0 auto; }
-  .mood { position: absolute; top: -8px; right: -12px; font-size: 26px; line-height: 1;
-    filter: drop-shadow(0 2px 3px rgba(0,0,0,.22)); }
-  .mood[data-m=look]  { animation: mLook 2.6s ease-in-out infinite; }
-  .mood[data-m=think] { animation: mThink 1.1s ease-in-out infinite; }
-  .mood[data-m=idea]  { animation: mIdea .9s ease-in-out infinite; }
-  .mood[data-m=party] { animation: mParty .6s ease; }
-  .mood[data-m=dizzy] { animation: mDizzy .85s linear infinite; }
-  .mood[data-m=spin]  { animation: mSpin .7s linear infinite; }
-  @keyframes mLook  { 0%{transform:scale(.4)} 22%{transform:scale(1.15)} 44%,100%{transform:scale(1)} }
-  @keyframes mThink { 0%{transform:rotate(-12deg) scale(1)} 50%{transform:rotate(12deg) scale(1.06)} 100%{transform:rotate(-12deg) scale(1)} }
-  @keyframes mIdea  { 0%,100%{transform:scale(1); filter:drop-shadow(0 0 0 rgba(255,210,60,0))} 50%{transform:scale(1.18); filter:drop-shadow(0 0 9px rgba(255,200,40,.9))} }
-  @keyframes mParty { 0%{transform:scale(.3) rotate(-25deg)} 60%{transform:scale(1.3) rotate(10deg)} 100%{transform:scale(1) rotate(0)} }
-  @keyframes mDizzy { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
-  @keyframes mSpin  { 0%{transform:rotate(0) scale(1)} 100%{transform:rotate(-360deg) scale(1)} }
   /* 진입 연출 (요소별 살짝 시차) */
   @keyframes riseIn { from{opacity:0; transform:translateY(16px)} to{opacity:1; transform:translateY(0)} }
   .duckrow,.mission,.board,.guesses,.btns,.score { animation: riseIn .5s both; }
@@ -256,7 +242,6 @@
             </g>
           </g>
         </svg>
-        <div class="mood" id="mood">👀</div>
       </div>
       <div class="bubble" id="say">무슨 그림일까~? 오리가 맞혀볼게! 👀</div>
     </div>
@@ -320,7 +305,6 @@
     const board = document.querySelector(".board");
     const scoreEl = document.querySelector(".score");
     const duck = document.getElementById("duck");
-    const mood = document.getElementById("mood");
     const say = document.getElementById("say");
     const targetEl = document.getElementById("target");
     const ghost = document.getElementById("ghost");
@@ -330,9 +314,19 @@
     const starsEl = document.getElementById("stars");
     const scoreN = document.getElementById("scoren");
 
-    // ── 오리 목소리: 내장한 진짜 꽥 샘플을 음높이만 바꿔 재생 (TTS 아님) ──
+    // ── 오리 목소리: 짧은 "꽥!" 억양 + 높은 톤 음성으로 실제로 "말"을 한다 ──
     let voiceOn = true;
     let AC = null, quackBuf = null;
+    const synth = window.speechSynthesis || null;
+    let koVoice = null;
+    function pickVoice() {
+      if (!synth) return;
+      const vs = synth.getVoices();
+      // 한국어 목소리 중 가능하면 여성/밝은 톤 우선 (더 귀여움)
+      koVoice = vs.find(v => /ko/i.test(v.lang) && /female|여자|여성|yuna|heami|sora|google/i.test(v.name))
+             || vs.find(v => /ko/i.test(v.lang)) || null;
+    }
+    if (synth) { pickVoice(); if ("onvoiceschanged" in synth) synth.onvoiceschanged = pickVoice; }
     function ensureAC() {
       if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; } decodeQuack(); }
       if (AC.state === "suspended") AC.resume();
@@ -353,26 +347,29 @@
       src.connect(g); g.connect(AC.destination);
       src.start(AC.currentTime + (when || 0));
     }
-    // 글자 수만큼 "꽥꽥"으로 말하기. 물음표면 끝을 올리고, 신나면 높게, 시무룩하면 내림.
-    function speakDuck(text, opts) {
+    // 오리가 실제로 말을 한다: 앞에 짧은 "꽥!" + 최대한 높인 톤(귀여운 오리). 부리는 소리에 맞춰 뻐끔.
+    function speak(text, opts) {
       opts = opts || {};
       if (!voiceOn) return;
       ensureAC();
-      let n = (text || "").replace(/[^가-힣a-zA-Z0-9]/g, "").length;
-      if (n < 1) n = 1; if (n > 7) n = 7;
-      const step = 0.12;
-      const base = opts.happy ? 1.5 : (opts.sad ? 0.82 : 1.12);
-      for (let i = 0; i < n; i++) {
-        let rate = base + Math.sin(i * 1.1) * 0.12;
-        if (opts.question && i >= n - 2) rate += 0.16 * (i - (n - 2) + 1);
-        if (opts.sad) rate -= 0.05 * i;
-        playQuack(rate, i * step, 0.9);
+      playQuack(opts.happy ? 1.55 : (opts.sad ? 0.95 : 1.2), 0, 0.65); // 말 앞의 "꽥!" 억양
+      const chars = (text || "").replace(/\s/g, "").length;
+      const dur = Math.min(chars, 14) * 0.15 + 0.4;
+      duckTalk(dur * 1000);
+      if (synth) {
+        try {
+          synth.cancel();
+          const u = new SpeechSynthesisUtterance(text);
+          u.lang = "ko-KR"; if (koVoice) u.voice = koVoice;
+          u.pitch = opts.sad ? 1.5 : 2;          // 톤 최대 → 귀여운 오리 느낌
+          u.rate = opts.happy ? 1.15 : 1.05;
+          u.volume = 1;
+          setTimeout(function () { if (voiceOn) synth.speak(u); }, 140); // "꽥!" 다음에 이어서
+        } catch (e) {}
       }
-      duckTalk(n * step * 1000 + 220);
     }
 
-    // ── 오리 기분 뱃지 + 오리 캐릭터 상태(SVG classList) ──
-    const MOODMAP = { "👀": "look", "🤔": "think", "💡": "idea", "🎉": "party", "😵": "dizzy", "🌀": "spin" };
+    // ── 오리 캐릭터 상태(SVG classList) ──
     const MOOD2DUCK = { "👀": "look", "🤔": "think", "💡": "idea", "🎉": "dance", "😵": "dizzy", "🌀": "spin" };
     const DUCK_STATES = ["idle", "look", "think", "idea", "dance", "dizzy", "spin"];
     let curDuckState = "", duckTalkTO = null;
@@ -388,12 +385,8 @@
       clearTimeout(duckTalkTO);
       duckTalkTO = setTimeout(function () { duck.classList.remove("talking"); }, ms || 700);
     }
+    // 기분(이모지)에 따라 오리 캐릭터 자체가 표정을 짓는다. (별도 뱃지 없음)
     function setMood(emoji) {
-      if (mood.textContent !== emoji) {
-        mood.textContent = emoji;
-        mood.setAttribute("data-m", MOODMAP[emoji] || "look");
-        mood.style.animation = "none"; void mood.offsetWidth; mood.style.animation = "";
-      }
       setDuckState(MOOD2DUCK[emoji] || "idle");
     }
     // 말풍선: 내용 바뀔 때마다 살짝 팝
@@ -515,8 +508,8 @@
     // 알 것 같을 때 — 꽥꽥으로 추측
     function guessOut(g) {
       setMood("💡");
-      say.innerHTML = "아! 혹시 <b>" + g.label + "</b> 아니야?";
-      speakDuck("혹시 " + g.label + " 아니야", { question: true });
+      say.innerHTML = "이거… <b>" + g.label + "</b> 맞지? 🤔";
+      speak("이거 " + g.label + " 맞지?", { question: true });
     }
 
     // 고정 3행을 만들어두고 값만 갱신 → 막대가 부드럽게 늘고 깜빡임이 없다.
@@ -598,10 +591,10 @@
       roundOver = true; clearInterval(timerId);
       score += 1; updateScore(true);
       setMood("🎉");
-      say.innerHTML = "아! <b>" + target.label + "</b> 맞지?! 정답이야! 🎉";
+      say.innerHTML = "<b>" + target.label + "</b> 맞았지?! 정답이야! 🎉";
       if (board) { board.classList.add("correct"); setTimeout(() => board.classList.remove("correct"), 950); }
       confetti();
-      speakDuck(target.label + " 맞지 정답", { happy: true });
+      speak(target.label + " 맞았지? 정답이야!", { happy: true });
       setTimeout(newRound, 2200);
     }
     function timeUp() {
@@ -609,7 +602,7 @@
       roundOver = true; clearInterval(timerId);
       setMood("😵");
       say.innerHTML = "으음… 모르겠다! <b>" + target.label + "</b> 였구나! 😵";
-      speakDuck(target.label + " 였구나", { sad: true });
+      speak("아, " + target.label + "였구나!", { sad: true });
       setTimeout(newRound, 2200);
     }
     function updateScore(bump) {
