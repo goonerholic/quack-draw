@@ -138,9 +138,6 @@
   canvas.pad { width: 100%; aspect-ratio: 1/1; background: #fffef8; border-radius: 18px;
     box-shadow: inset 0 0 0 3px #ffd98e, 0 8px 20px rgba(0,0,0,.14); touch-action: none;
     display: block; cursor: crosshair; }
-  .hintghost { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    font-size: 74px; opacity: .10; pointer-events: none; animation: ghostPulse 2.6s ease-in-out infinite; }
-  @keyframes ghostPulse { 0%,100%{opacity:.08; transform:scale(1)} 50%{opacity:.15; transform:scale(1.04)} }
   .board.correct canvas.pad { animation: correctGlow .9s ease; }
   @keyframes correctGlow {
     0%   { box-shadow: inset 0 0 0 3px #ffd98e, 0 8px 20px rgba(0,0,0,.14); }
@@ -253,7 +250,6 @@
 
     <div class="board">
       <canvas class="pad" id="pad"></canvas>
-      <div class="hintghost" id="ghost"></div>
     </div>
 
     <div class="guesses" id="guesses"></div>
@@ -307,7 +303,6 @@
     const duck = document.getElementById("duck");
     const say = document.getElementById("say");
     const targetEl = document.getElementById("target");
-    const ghost = document.getElementById("ghost");
     const guessesEl = document.getElementById("guesses");
     const timerEl = document.getElementById("timer");
     const tbar = document.getElementById("tbar");
@@ -415,7 +410,6 @@
       ensureAC(); // 첫 터치(제스처)에서 오디오 활성화
       drawing = true; cur = [[], []]; strokes.push(cur);
       const [x, y] = pos(e); cur[0].push(x); cur[1].push(y);
-      ghost.style.display = "none";
       redraw();
     }
     function move(e) {
@@ -556,8 +550,6 @@
       target = nextTarget();
       // 문제는 화면에만 표시된다 (오리는 답을 모른 채 맞히는 역할)
       targetEl.textContent = (EMOJI[target.cat] || "") + " " + target.label;
-      ghost.textContent = EMOJI[target.cat] || "";
-      ghost.style.display = "flex";
       setMood("👀");
       say.innerHTML = "무슨 그림일까~? 오리가 맞혀볼게! 👀";
       startTimer();
@@ -607,7 +599,6 @@
     // ── 버튼 ──
     document.getElementById("clear").onclick = () => {
       strokes = []; redraw(); renderGuesses([]); lastSpoken = null; winStreak = 0; settle = 0;
-      ghost.style.display = "flex";
       setMood("👀");
       say.innerHTML = "다시 그려볼까? 👀";
     };
