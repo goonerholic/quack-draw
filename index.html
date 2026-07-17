@@ -284,10 +284,8 @@
   const app = document.getElementById("app");
   const fx = document.getElementById("fx");
 
-  // ── 이모지 힌트 ──
-  const EMOJI = { duck:"🦆", cat:"🐱", fish:"🐟", flower:"🌷", tree:"🌳",
-    house:"🏠", star:"⭐", car:"🚗", umbrella:"☂️", butterfly:"🦋",
-    apple:"🍎", "ice cream":"🍦" };
+  // 이모지는 model.json 에서 카테고리별로 로드한다. (아래 EMOJI 는 start() 안에서 채움)
+  let EMOJI = {};
 
   fetch("model.json").then(r => r.json()).then(start).catch(e => {
     app.innerHTML = "😢 모델을 못 불러왔어요.<br><small>" + e + "</small>";
@@ -295,6 +293,8 @@
 
   function start(modelJson) {
     const M = QuackModel.prepare(modelJson);
+    EMOJI = {};
+    M.cats.forEach((c, i) => { EMOJI[c] = (M.emojis && M.emojis[i]) || ""; });
 
     // 게임 UI 심기
     const tpl = document.getElementById("gametpl");
@@ -321,10 +321,20 @@
     let koVoice = null;
     function pickVoice() {
       if (!synth) return;
-      const vs = synth.getVoices();
-      // 한국어 목소리 중 가능하면 여성/밝은 톤 우선 (더 귀여움)
-      koVoice = vs.find(v => /ko/i.test(v.lang) && /female|여자|여성|yuna|heami|sora|google/i.test(v.name))
-             || vs.find(v => /ko/i.test(v.lang)) || null;
+      const ko = synth.getVoices().filter(v => /ko(-|_)?KR|^ko$/i.test(v.lang) || /korean/i.test(v.name));
+      if (!ko.length) { koVoice = null; return; }
+      // 품질 좋은 목소리 우선: 뉴럴/내추럴/시리/구글/유나 > 여성 > 아무 한국어
+      const score = v => {
+        const n = (v.name + " " + v.voiceURI).toLowerCase();
+        let s = 0;
+        if (/neural|natural|premium|enhanced|siri/.test(n)) s += 6;
+        if (/google/.test(n)) s += 4;
+        if (/yuna|sora|heami|sunhi|female|여자|여성/.test(n)) s += 3;
+        if (!v.localService) s += 1; // 원격(클라우드) 목소리가 대개 더 자연스러움
+        return s;
+      };
+      ko.sort((a, b) => score(b) - score(a));
+      koVoice = ko[0];
     }
     if (synth) { pickVoice(); if ("onvoiceschanged" in synth) synth.onvoiceschanged = pickVoice; }
     function ensureAC() {
@@ -361,8 +371,9 @@
           synth.cancel();
           const u = new SpeechSynthesisUtterance(text);
           u.lang = "ko-KR"; if (koVoice) u.voice = koVoice;
-          u.pitch = opts.sad ? 1.5 : 2;          // 톤 최대 → 귀여운 오리 느낌
-          u.rate = opts.happy ? 1.15 : 1.05;
+          // 살짝만 높여 "귀엽되 자연스럽게" (과한 pitch는 오히려 로봇/삑삑거림)
+          u.pitch = opts.sad ? 1.05 : 1.3;
+          u.rate = opts.happy ? 1.06 : 1.0;
           u.volume = 1;
           setTimeout(function () { if (voiceOn) synth.speak(u); }, 140); // "꽥!" 다음에 이어서
         } catch (e) {}
@@ -471,8 +482,9 @@
       }
       return n ? { n, ext: Math.max(maxx - minx, maxy - miny) } : { n: 0, ext: 0 };
     }
-    const SURE = 0.45;       // 이 정도 확신하면 소리내어 추측
-    const WIN_P = 0.6;       // 정답 확신 기준
+    const SURE = 0.4;        // 이 정도 확신해야 소리내어 추측 (아니면 "잘 모르겠어")
+    const MARGIN = 0.1;      // 1·2위가 이보다 가까우면 애매 → 추측 보류
+    const WIN_P = 0.55;      // 정답 확신 기준
     const WIN_STREAK = 3;    // 목표가 "연속 3틱" 확신 1위여야 정답 (순간 오탐 방지)
     const SETTLE_TICKS = 4;  // 펜을 뗀 뒤 정지된 그림을 몇 번 더 살펴본다
     let lastSpoken = null, winStreak = 0, settle = 0;
@@ -483,12 +495,12 @@
       dirty = false;
       const ex = extent();
       // 충분히 그려야(점 8개 이상 + 캔버스의 18% 이상 크기) 판단 시작
-      if (ex.n < 8 || ex.ext < W * 0.18) { renderGuesses([]); thinking(); winStreak = 0; return; }
+      if (ex.n < 8 || ex.ext < W * 0.18) { renderGuesses([]); thinking(false); winStreak = 0; return; }
       const img = QuackModel.rasterize(strokes);
       const probs = QuackModel.predict(M, img);
       const top = QuackModel.topk(M, probs, 3);
       renderGuesses(top);
-      const g = top[0];
+      const g = top[0], g2 = top[1];
       if (!g) return;
       // 정답: 목표가 확신 1위인 상태가 연속으로 이어질 때만
       if (g.cat === target.cat && g.p > WIN_P) {
@@ -496,22 +508,24 @@
       } else {
         winStreak = 0;
       }
-      if (g.p > SURE) {
-        // 확신하는 추측 → 소리내어 맞히기 (추측이 바뀔 때만)
+      // 충분히 확신하고(1위 확률>SURE) 2위와도 벌어져야 소리내어 추측. 아니면 "잘 모르겠어".
+      const confident = g.p > SURE && (!g2 || g.p - g2.p > MARGIN);
+      if (confident) {
         if (g.cat !== lastSpoken) { lastSpoken = g.cat; guessOut(g); }
       } else {
-        // 아직 모르겠음 → 갸우뚱
         lastSpoken = null;
-        thinking();
+        thinking(true);
       }
     }, 280);
 
-    // 갸우뚱하는 표정과 말
-    const PUZZLE = ["으음… 이게 뭐지? 🤔", "무슨 그림일까~? 🤔", "조금만 더 그려줘! 👀"];
+    // 갸우뚱하는 표정과 말 (덜 그렸을 때 vs 그렸는데 모르겠을 때)
+    const PUZZLE_MORE = ["조금 더 그려줄래? 👀", "무슨 그림일까~? 👀"];
+    const PUZZLE_UNSURE = ["음~ 이게 뭐지? 잘 모르겠어 🤔", "으음… 어렵다! 조금만 더~ 🤔", "이게 뭘까…? 🤔"];
     let puzzleIdx = 0;
-    function thinking() {
+    function thinking(unsure) {
       setMood("🤔");
-      const msg = PUZZLE[Math.min(puzzleIdx, PUZZLE.length - 1)];
+      const arr = unsure ? PUZZLE_UNSURE : PUZZLE_MORE;
+      const msg = arr[puzzleIdx % arr.length];
       if (say.textContent !== msg) say.innerHTML = msg;
     }
     // 알 것 같을 때 — 꽥꽥으로 추측
@@ -568,7 +582,7 @@
     function newRound() {
       strokes = []; redraw(); renderGuesses([]);
       roundOver = false; dirty = false; lastSpoken = null; winStreak = 0; settle = 0;
-      puzzleIdx = (puzzleIdx + 1) % PUZZLE.length;
+      puzzleIdx = (puzzleIdx + 1) % 3;
       target = nextTarget();
       // 문제는 화면에만 표시된다 (오리는 답을 모른 채 맞히는 역할)
       targetEl.textContent = (EMOJI[target.cat] || "") + " " + target.label;
