@@ -314,29 +314,9 @@
     const starsEl = document.getElementById("stars");
     const scoreN = document.getElementById("scoren");
 
-    // ── 오리 목소리: 짧은 "꽥!" 억양 + 높은 톤 음성으로 실제로 "말"을 한다 ──
-    let voiceOn = true;
+    // ── 소통은 오리의 "표정 + 말풍선"으로. 소리는 귀여운 "꽥" 효과음만(말은 안 함). ──
+    let voiceOn = true;              // 여기서 voiceOn 은 "꽥 효과음 on/off"
     let AC = null, quackBuf = null;
-    const synth = window.speechSynthesis || null;
-    let koVoice = null;
-    function pickVoice() {
-      if (!synth) return;
-      const ko = synth.getVoices().filter(v => /ko(-|_)?KR|^ko$/i.test(v.lang) || /korean/i.test(v.name));
-      if (!ko.length) { koVoice = null; return; }
-      // 품질 좋은 목소리 우선: 뉴럴/내추럴/시리/구글/유나 > 여성 > 아무 한국어
-      const score = v => {
-        const n = (v.name + " " + v.voiceURI).toLowerCase();
-        let s = 0;
-        if (/neural|natural|premium|enhanced|siri/.test(n)) s += 6;
-        if (/google/.test(n)) s += 4;
-        if (/yuna|sora|heami|sunhi|female|여자|여성/.test(n)) s += 3;
-        if (!v.localService) s += 1; // 원격(클라우드) 목소리가 대개 더 자연스러움
-        return s;
-      };
-      ko.sort((a, b) => score(b) - score(a));
-      koVoice = ko[0];
-    }
-    if (synth) { pickVoice(); if ("onvoiceschanged" in synth) synth.onvoiceschanged = pickVoice; }
     function ensureAC() {
       if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; } decodeQuack(); }
       if (AC.state === "suspended") AC.resume();
@@ -357,27 +337,13 @@
       src.connect(g); g.connect(AC.destination);
       src.start(AC.currentTime + (when || 0));
     }
-    // 오리가 실제로 말을 한다: 앞에 짧은 "꽥!" + 최대한 높인 톤(귀여운 오리). 부리는 소리에 맞춰 뻐끔.
+    // 오리는 "말"을 하지 않는다. 짧은 꽥 + 부리 뻐끔으로 반응하고, 내용은 말풍선/표정이 전한다.
     function speak(text, opts) {
       opts = opts || {};
-      if (!voiceOn) return;
       ensureAC();
-      playQuack(opts.happy ? 1.55 : (opts.sad ? 0.95 : 1.2), 0, 0.65); // 말 앞의 "꽥!" 억양
+      playQuack(opts.happy ? 1.5 : (opts.sad ? 0.95 : 1.2), 0, 0.6); // 짧은 "꽥!"
       const chars = (text || "").replace(/\s/g, "").length;
-      const dur = Math.min(chars, 14) * 0.15 + 0.4;
-      duckTalk(dur * 1000);
-      if (synth) {
-        try {
-          synth.cancel();
-          const u = new SpeechSynthesisUtterance(text);
-          u.lang = "ko-KR"; if (koVoice) u.voice = koVoice;
-          // 살짝만 높여 "귀엽되 자연스럽게" (과한 pitch는 오히려 로봇/삑삑거림)
-          u.pitch = opts.sad ? 1.05 : 1.3;
-          u.rate = opts.happy ? 1.06 : 1.0;
-          u.volume = 1;
-          setTimeout(function () { if (voiceOn) synth.speak(u); }, 140); // "꽥!" 다음에 이어서
-        } catch (e) {}
-      }
+      duckTalk(Math.min(chars, 12) * 0.11 * 1000 + 320); // 부리 뻐끔(말풍선 길이만큼)
     }
 
     // ── 오리 캐릭터 상태(SVG classList) ──
