@@ -450,7 +450,7 @@
       cur[0].push(x); cur[1].push(y); dirty = true;
       ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(x, y); ctx.stroke();
     }
-    function up() { drawing = false; dirty = true; }
+    function up() { drawing = false; dirty = true; settle = SETTLE_TICKS; }
 
     pad.addEventListener("mousedown", down);
     pad.addEventListener("mousemove", move);
@@ -471,22 +471,31 @@
       }
       return n ? { n, ext: Math.max(maxx - minx, maxy - miny) } : { n: 0, ext: 0 };
     }
-    const SURE = 0.45;   // 이 정도 확신하면 소리내어 추측
-    const WIN_P = 0.55;  // 정답 확정 기준
-    let lastSpoken = null;
+    const SURE = 0.45;       // 이 정도 확신하면 소리내어 추측
+    const WIN_P = 0.6;       // 정답 확신 기준
+    const WIN_STREAK = 3;    // 목표가 "연속 3틱" 확신 1위여야 정답 (순간 오탐 방지)
+    const SETTLE_TICKS = 4;  // 펜을 뗀 뒤 정지된 그림을 몇 번 더 살펴본다
+    let lastSpoken = null, winStreak = 0, settle = 0;
     setInterval(() => {
-      if (!dirty || roundOver) return;
+      if (roundOver) return;
+      if (!dirty && settle <= 0) return;       // 변화도 없고 살펴볼 것도 없으면 쉼
+      if (!dirty && settle > 0) settle--;       // 정지 상태에서도 몇 번 더 판단
       dirty = false;
       const ex = extent();
       // 충분히 그려야(점 8개 이상 + 캔버스의 18% 이상 크기) 판단 시작
-      if (ex.n < 8 || ex.ext < W * 0.18) { renderGuesses([]); thinking(); return; }
+      if (ex.n < 8 || ex.ext < W * 0.18) { renderGuesses([]); thinking(); winStreak = 0; return; }
       const img = QuackModel.rasterize(strokes);
       const probs = QuackModel.predict(M, img);
       const top = QuackModel.topk(M, probs, 3);
       renderGuesses(top);
       const g = top[0];
       if (!g) return;
-      if (g.cat === target.cat && g.p > WIN_P) { win(); return; }
+      // 정답: 목표가 확신 1위인 상태가 연속으로 이어질 때만
+      if (g.cat === target.cat && g.p > WIN_P) {
+        if (++winStreak >= WIN_STREAK) { win(); return; }
+      } else {
+        winStreak = 0;
+      }
       if (g.p > SURE) {
         // 확신하는 추측 → 소리내어 맞히기 (추측이 바뀔 때만)
         if (g.cat !== lastSpoken) { lastSpoken = g.cat; guessOut(g); }
@@ -558,7 +567,7 @@
 
     function newRound() {
       strokes = []; redraw(); renderGuesses([]);
-      roundOver = false; dirty = false; lastSpoken = null;
+      roundOver = false; dirty = false; lastSpoken = null; winStreak = 0; settle = 0;
       puzzleIdx = (puzzleIdx + 1) % PUZZLE.length;
       target = nextTarget();
       // 문제는 화면에만 표시된다 (오리는 답을 모른 채 맞히는 역할)
@@ -613,7 +622,7 @@
 
     // ── 버튼 ──
     document.getElementById("clear").onclick = () => {
-      strokes = []; redraw(); renderGuesses([]); lastSpoken = null;
+      strokes = []; redraw(); renderGuesses([]); lastSpoken = null; winStreak = 0; settle = 0;
       ghost.style.display = "flex";
       setMood("👀");
       say.innerHTML = "다시 그려볼까? 👀";
