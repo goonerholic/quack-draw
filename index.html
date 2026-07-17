@@ -31,14 +31,76 @@
 
   /* ── 오리 + 말풍선 ── */
   .duckrow { display: flex; align-items: flex-end; gap: 8px; margin: 10px 2px 8px; }
-  .duck { font-size: 58px; line-height: 1; flex: 0 0 auto;
-    filter: drop-shadow(0 6px 8px rgba(0,0,0,.18));
-    animation: idle 3.2s ease-in-out infinite; transform-origin: 50% 92%; }
-  .duck.talk { animation: waddle .5s ease-in-out; }
-  .duck.happy { animation: jump .7s cubic-bezier(.3,1.4,.5,1); }
-  @keyframes idle { 0%,100%{transform:translateY(0) rotate(-1.5deg)} 50%{transform:translateY(-4px) rotate(1.5deg)} }
-  @keyframes waddle { 0%,100%{transform:rotate(0)} 20%{transform:rotate(-11deg)} 60%{transform:rotate(11deg)} 80%{transform:rotate(-5deg)} }
-  @keyframes jump { 0%,100%{transform:translateY(0) scale(1)} 35%{transform:translateY(-26px) scale(1.18)} 60%{transform:translateY(0) scale(1)} 75%{transform:translateY(-10px) scale(1.08)} }
+  /* ── 살아있는 SVG 오리 ── */
+  .duck { width: 96px; height: auto; flex: 0 0 auto; overflow: visible;
+    filter: drop-shadow(0 7px 6px rgba(0,0,0,.15)); }
+  .duck * { transform-box: fill-box; }
+  .dk-all { transform-origin: 50% 100%; }
+  .dk-head { transform-origin: 50% 92%; }
+  .dk-eye { transform-origin: 50% 50%; }
+  .dk-wing.wl { transform-origin: 88% 12%; }
+  .dk-wing.wr { transform-origin: 12% 12%; }
+  .dk-foot { transform-origin: 50% 0%; }
+  .dk-beak.bot { transform-origin: 50% 8%; }
+  .dk-spiral { opacity: 0; }
+  .dk-wing, .dk-pupil { transition: transform .25s ease; }
+
+  /* 기본 대기: 통통 숨쉬기 + 가끔 눈 깜빡 */
+  .dk-all { animation: dBob 3s ease-in-out infinite; }
+  @keyframes dBob { 0%,100%{transform:translateY(0) rotate(-1.5deg)} 50%{transform:translateY(-4px) rotate(1.5deg)} }
+  .duck:not(.s-dizzy) .dk-eye { animation: dBlink 4.2s ease-in-out infinite; }
+  @keyframes dBlink { 0%,90%,100%{transform:scaleY(1)} 95%{transform:scaleY(.12)} }
+
+  /* 말할 때: 부리 뻐끔 + 머리 까딱 */
+  .duck.talking .dk-beak.bot { animation: dQuack .17s ease-in-out infinite; }
+  @keyframes dQuack { 0%,100%{transform:translateY(0) rotate(0)} 50%{transform:translateY(3px) rotate(10deg)} }
+  .duck.talking .dk-head { animation: dNod .17s ease-in-out infinite; }
+  @keyframes dNod { 0%,100%{transform:translateY(0)} 50%{transform:translateY(1.5px)} }
+
+  /* 두리번(look): 눈동자 굴리기 */
+  .duck.s-look .dk-pupil { animation: dLook 2.8s ease-in-out infinite; }
+  @keyframes dLook { 0%,100%{transform:translate(0,0)} 20%{transform:translate(3px,-1px)} 55%{transform:translate(-3px,1px)} 80%{transform:translate(2px,2px)} }
+
+  /* 갸우뚱(think): 머리 기울이고 위 쳐다봄 */
+  .duck.s-think .dk-head { animation: dTilt 2.4s ease-in-out infinite; }
+  @keyframes dTilt { 0%,100%{transform:rotate(-9deg)} 50%{transform:rotate(-15deg)} }
+  .duck.s-think .dk-pupil { transform: translateY(-3px); }
+  .duck.s-think .dk-tuft { animation: dTuft 2.4s ease-in-out infinite; transform-origin: 50% 100%; }
+  @keyframes dTuft { 0%,100%{transform:rotate(-6deg)} 50%{transform:rotate(8deg)} }
+
+  /* 번뜩(idea): 폴짝 + 눈 커지고 날개 번쩍 */
+  .duck.s-idea .dk-all { animation: dPop .5s ease; }
+  @keyframes dPop { 0%{transform:translateY(0) scale(1)} 40%{transform:translateY(-9px) scale(1.08)} 100%{transform:translateY(0) scale(1)} }
+  .duck.s-idea .dk-pupil { transform: scale(1.18); }
+  .duck.s-idea .dk-wing.wl { transform: rotate(-26deg); }
+  .duck.s-idea .dk-wing.wr { transform: rotate(26deg); }
+
+  /* 정답(dance): 통통 튀며 좌우로 춤 + 날개 파닥 + 발 스텝 */
+  .duck.s-dance .dk-all { animation: dDance .62s ease-in-out infinite; }
+  @keyframes dDance {
+    0%{transform:translateY(0) rotate(-9deg)} 25%{transform:translateY(-13px) rotate(9deg)}
+    50%{transform:translateY(0) rotate(-9deg)} 75%{transform:translateY(-13px) rotate(9deg)}
+    100%{transform:translateY(0) rotate(-9deg)} }
+  .duck.s-dance .dk-wing.wl { animation: dFlapL .31s ease-in-out infinite; }
+  .duck.s-dance .dk-wing.wr { animation: dFlapR .31s ease-in-out infinite; }
+  @keyframes dFlapL { 0%,100%{transform:rotate(-12deg)} 50%{transform:rotate(-48deg)} }
+  @keyframes dFlapR { 0%,100%{transform:rotate(12deg)} 50%{transform:rotate(48deg)} }
+  .duck.s-dance .dk-foot.fl { animation: dStepL .31s ease-in-out infinite; }
+  .duck.s-dance .dk-foot.fr { animation: dStepR .31s ease-in-out infinite; }
+  @keyframes dStepL { 0%,100%{transform:translateY(0) rotate(0)} 50%{transform:translateY(-3px) rotate(-10deg)} }
+  @keyframes dStepR { 0%,100%{transform:translateY(-3px) rotate(10deg)} 50%{transform:translateY(0) rotate(0)} }
+  .duck.s-dance .dk-pupil { transform: scale(1.1); }
+
+  /* 어지럼(dizzy): 눈동자 숨기고 소용돌이 눈 + 머리 휘청 */
+  .duck.s-dizzy .dk-pupil, .duck.s-dizzy .dk-glint { opacity: 0; }
+  .duck.s-dizzy .dk-spiral { opacity: 1; transform-origin: 50% 50%; animation: dSpin .9s linear infinite; }
+  @keyframes dSpin { to { transform: rotate(360deg); } }
+  .duck.s-dizzy .dk-all { animation: dWobble .6s ease-in-out infinite; }
+  @keyframes dWobble { 0%,100%{transform:rotate(-6deg)} 50%{transform:rotate(6deg)} }
+
+  /* 휙 넘기기(spin) */
+  .duck.s-spin .dk-all { animation: dTwirl .7s ease-in-out; }
+  @keyframes dTwirl { 0%{transform:rotate(0) scale(1)} 50%{transform:rotate(180deg) scale(.88)} 100%{transform:rotate(360deg) scale(1)} }
   .duckwrap { position: relative; flex: 0 0 auto; }
   .mood { position: absolute; top: -8px; right: -12px; font-size: 26px; line-height: 1;
     filter: drop-shadow(0 2px 3px rgba(0,0,0,.22)); }
@@ -162,7 +224,38 @@
   <template id="gametpl">
     <div class="duckrow">
       <div class="duckwrap">
-        <div class="duck" id="duck">🦆</div>
+        <svg id="duck" class="duck s-idle" viewBox="0 0 120 130" xmlns="http://www.w3.org/2000/svg">
+          <g class="dk-all">
+            <g class="dk-feet">
+              <path class="dk-foot fl" d="M50 106 q-9 7 -13 16 q9 4 18 0 q3 -10 -5 -16 z" fill="#ff8a1a"/>
+              <path class="dk-foot fr" d="M70 106 q9 7 13 16 q-9 4 -18 0 q-3 -10 5 -16 z" fill="#ff8a1a"/>
+            </g>
+            <path class="dk-wing wl" d="M30 74 q-15 5 -11 26 q10 7 19 -4 q3 -16 -8 -22 z" fill="#f4bd1a"/>
+            <path class="dk-wing wr" d="M90 74 q15 5 11 26 q-10 7 -19 -4 q-3 -16 8 -22 z" fill="#f4bd1a"/>
+            <ellipse class="dk-body" cx="60" cy="84" rx="34" ry="30" fill="#ffcf33"/>
+            <ellipse class="dk-belly" cx="60" cy="92" rx="22" ry="18" fill="#fff0ad"/>
+            <g class="dk-head">
+              <path class="dk-tuft" d="M58 20 q-3 -13 5 -17 q-3 9 5 10 q7 -3 6 3 q5 6 -6 9 z" fill="#ffd633"/>
+              <circle class="dk-headfill" cx="60" cy="46" r="27" fill="#ffd633"/>
+              <circle class="dk-cheek" cx="41" cy="53" r="7" fill="#ff9db0" opacity=".5"/>
+              <circle class="dk-cheek" cx="79" cy="53" r="7" fill="#ff9db0" opacity=".5"/>
+              <g class="dk-eye el">
+                <ellipse class="dk-white" cx="50" cy="42" rx="8.5" ry="10" fill="#fff"/>
+                <circle class="dk-pupil" cx="50" cy="44" r="4.4" fill="#3a2c10"/>
+                <circle class="dk-glint" cx="52" cy="41" r="1.7" fill="#fff"/>
+              </g>
+              <g class="dk-eye er">
+                <ellipse class="dk-white" cx="70" cy="42" rx="8.5" ry="10" fill="#fff"/>
+                <circle class="dk-pupil" cx="70" cy="44" r="4.4" fill="#3a2c10"/>
+                <circle class="dk-glint" cx="72" cy="41" r="1.7" fill="#fff"/>
+              </g>
+              <path class="dk-spiral sl" d="M50 43 m-6 -1 a6 6 0 1 1 5 7 a4 4 0 1 1 -3 -5 a2 2 0 1 1 2 3" fill="none" stroke="#3a2c10" stroke-width="1.6"/>
+              <path class="dk-spiral sr" d="M70 43 m-6 -1 a6 6 0 1 1 5 7 a4 4 0 1 1 -3 -5 a2 2 0 1 1 2 3" fill="none" stroke="#3a2c10" stroke-width="1.6"/>
+              <path class="dk-beak top" d="M45 58 q15 -9 30 0 q-3 9 -15 9 q-12 0 -15 -9 z" fill="#ff8a1a"/>
+              <path class="dk-beak bot" d="M48 61 q12 8 24 0 q-2 8 -12 8 q-10 0 -12 -8 z" fill="#ff7509"/>
+            </g>
+          </g>
+        </svg>
         <div class="mood" id="mood">👀</div>
       </div>
       <div class="bubble" id="say">무슨 그림일까~? 오리가 맞혀볼게! 👀</div>
@@ -183,7 +276,7 @@
     <div class="btns">
       <button class="ghost" id="clear">🧽 지우기</button>
       <button class="ghost" id="skip">➡️ 다른 그림</button>
-      <button class="primary" id="sound">🔊 음성</button>
+      <button class="primary" id="sound">🔊 소리</button>
     </div>
 
     <div class="score">
@@ -202,6 +295,7 @@
 <script>
 (function () {
   "use strict";
+  const QUACK_B64 = "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rv+5/8H/zP/W/9//5v/r//H/9P/4//3/AQADAAgADQASABgAHwAlAC0ANwBBAEkAVABbAGEAZQBmAGUAXwBZAEsAPwAyACUAFwAMAAIA+v/0/+//6//l/+L/3v/Z/9P/0P/L/8f/w//A/7//v//A/8H/vv+9/7v/uf+0/67/p/+i/6L/pP+o/7D/uv/L/+H//v8ZADAAQgBPAFMAVwBZAFkAVABPAEgAQwA/ADwAOwA6ADoAOwA5ADkANgA0AC4AKgAnACIAHQAaABUAFAAPAAwABwAAAPr/8P/m/93/0f/I/8D/uv+1/7L/tP+3/7z/wv/I/8//1v/d/+P/6v/u//L/9f/5//z//v8BAAMABQAJAAwAEQAUABkAHgAkACoAMQA3ADwAQABDAEQAQQA/ADkAMwArACIAGQARAAgAAgD9//n/9v/y/+//7v/r/+f/5P/i/97/3P/Z/9f/1f/W/9j/2P/X/9b/1v/U/9L/z//K/8f/xf/G/8f/zP/R/9v/5//4/wgAGQAlAC4AMwA0ADYANwA1ADMALQAqACgAJgAmACQAIgAkACQAIgAiACAAHgAcABkAFgATABEADgANAAkACAAGAAMA///5//P/7//o/+L/3v/X/9X/0v/R/9H/1P/Z/9v/4P/k/+j/7f/w//P/9v/4//v//P///wAAAAABAAQABwAIAAkADQAPABMAFwAbAB4AIQAlACcAKQApACgAJgAjAB4AGQAVAA8ACgAEAAEA///8//n/+P/1//X/8//y/+//7//r/+r/5//m/+f/5v/n/+b/5//m/+b/5f/j/+D/3f/c/9v/2//b/97/4f/m/+7/+f8DAA4AFwAcACEAIwAjACQAIwAhACAAGwAbABoAGAAZABcAGAAYABkAGAAXABQAEwARABAADgANAAoACQAIAAYABgADAAEA/v/5//X/8f/t/+n/5f/i/9//3v/d/+D/4f/k/+b/6P/s/+//8v/1//j/+f/7//v//v/+/wAAAAACAAQABQAHAAkACQAMABAAEgAWABoAHQAfACAAIgAiACEAIAAbABoAFQARAAwABwADAAAA///+//v/+f/3//b/9f/y//H/8P/t/+v/6//q/+j/6P/p/+n/6P/o/+f/5v/l/+L/4P/e/9v/3f/d/97/4f/n/+//+P8CAA0AFQAcACAAIgAlACUAJQAiACEAHgAcABoAGQAaABkAGQAZABkAGAAYABcAFgAUABEADwAOAAwACwAJAAkABgAEAAEA/v/6//f/8P/t/+f/4v/f/9z/2v/Z/9r/2//d/+H/5P/o/+v/7//x//T/9v/5//v//P/9/wAAAAABAAIABQAHAAkACwANABAAFAAYABwAIAAjACUAKAApACkAJwAlACEAHQAYABIADAAHAAQAAAD9//r/+f/2//X/9P/x/+//7P/r/+n/5//l/+P/4//i/+L/4//j/+H/4P/f/93/2v/Y/9T/1P/T/9T/1v/b/+H/6v/2/wIADwAbACMAKAArAC4ALwAvACwAKQAmACMAIgAhACAAHwAfAB8AIQAgAB4AHQAbABkAFwAUABIAEAAOAAwACwAIAAYAAgD///v/9f/v/+j/4v/c/9j/1P/R/8//0P/R/9T/2P/b/9//5P/o/+3/8P/0//X/+f/6//z//v8AAAEAAwAFAAcACQANAA8AEwAXABsAIAAkACkALAAwADEAMwAxAC8AKwAmACEAGwAUAA0ACAACAP//+//4//b/8//x//D/7f/q/+n/5v/j/+D/3//e/93/3f/d/93/3f/c/9v/2f/X/9P/0P/N/8v/zP/O/9D/1f/d/+j/9v8FABQAIAApAC4AMgAzADQAMwAyAC4AKgAnACYAJAAjACMAIgAjACMAIwAiACAAHgAcABgAFgAUABEADgANAAsACAAGAAMA///7//X/7//o/+L/2//W/9H/z//N/83/z//R/9X/2f/d/+L/5v/r/+//8v/1//j/+v/9////AAABAAMABQAHAAkACwAOABEAFQAaAB4AIgAnACoALgAxADEAMQAvAC0AKAAjAB0AFgAPAAoABQAAAP3/+v/3//X/8//y//D/7f/q/+j/5v/k/+L/4f/f/9//3//f/+D/3//e/93/3P/Z/9b/0//Q/9H/0P/S/9b/2v/i/+z/+v8IABQAHgAmACoALQAuAC8ALgArACgAJQAjACEAIAAfAB4AHgAfAB8AHgAdABwAGgAYABUAEwARAA8ADQALAAkACAAFAAMA///8//f/8v/t/+f/4v/e/9n/1//V/9b/1//Z/9z/3//j/+f/6v/u//H/9P/2//n/+//9//7/AAAAAAIAAwAFAAcACAAKAA0AEAATABYAGgAeACAAIwAlACYAJwAmACMAIQAcABgAEwAOAAoABQABAP///P/6//j/9//2//X/8//x//D/7//s/+v/6f/o/+j/6P/o/+j/6P/n/+f/5//l/+P/4f/f/97/3f/e/+D/4v/n/+z/9f///wgAEQAXABsAHgAgACAAIQAfAB4AGwAZABgAFwAWABYAFQAVABUAFAAVABQAEwARABAADgANAAwACgAJAAcABgAFAAQAAQAAAP3/+v/3//P/7//s/+n/5//m/+X/5f/l/+f/6f/r/+3/8P/y//T/9//5//r/+//9//7//////wAAAQABAAIAAwAEAAYABwAJAAwADgAPABIAEwAWABcAGAAYABgAFgAVABMADwANAAoABgAEAAIAAAD///3//P/7//r/+v/5//j/9//1//T/9P/z//L/8v/x//H/8v/x//L/8v/x//H/7//v/+3/7P/r/+z/7f/t//D/8v/2//z/AQAGAAsADwARABMAEwATABMAEwARABAADwAOAA0ADQANAA0ADAAMAAwADAALAAsACgAJAAgABwAHAAUABQAEAAQAAwACAAEAAAD+//3/+//5//b/9P/z//H/8P/w//D/8P/x//L/8//1//b/9//5//r/+//8//3//v/+////AAAAAAAAAAACAAIAAwADAAUABQAGAAgACQALAAwADQAOAA4ADgAOAA4ADQAMAAoACAAGAAQAAwABAAAAAAD///7//f/8//z/+//7//r/+v/5//j/+P/3//f/9//3//f/9//3//f/9//2//X/9P/0//P/8//y//L/8//0//b/+P/7////AgAGAAkACwAMAA0ADQANAA0ADQALAAsACgAKAAkACQAJAAkACQAJAAkACAAIAAgABwAHAAYABQAEAAQABAADAAIAAgABAAAAAAD///3//P/6//j/9//1//T/8//z//P/8//0//X/9v/3//j/+f/6//v//f/9//7//v/+/wAAAAAAAAAAAQABAAIAAgADAAQABQAGAAcACAAJAAsADAANAA0ADQANAA0ADAALAAoACAAHAAUAAwABAAAAAAD///7//f/9//z//P/8//v/+v/5//j/+P/3//f/9v/2//b/9//2//b/9v/1//X/9f/z//L/8f/x//H/8v/y//T/9v/5//z/AAAEAAgACwANAA4ADwAPAA8ADwAPAA4ADAAMAAsACwALAAoACgAKAAoACwAKAAoACQAIAAgABwAGAAUABQAEAAQAAwACAAEAAAAAAP7//P/6//j/9v/0//L/8f/w//D/8P/w//H/8v/z//X/9v/3//n/+v/7//z//f/+//7///8AAAAAAAABAAEAAgADAAQABQAGAAcACQAKAAwADQAPABAAEQASABEAEQAQAA8ADgAMAAkABwAFAAMAAQAAAP///v/9//z/+//7//r/+f/4//f/9//2//X/9P/0//T/9P/0//T/8//z//P/8v/y//D/7//u/+3/7f/t/+7/7//x//T/+P/+/wMACAAMAA8AEQASABMAFAAUABMAEQAQAA8ADgAOAA0ADQANAA0ADQANAA0ADQAMAAsACgAJAAgABwAGAAYABQAEAAQAAgABAAAA///9//v/+f/2//P/8f/v/+7/7f/s/+z/7f/u/+//8f/y//T/9v/3//n/+v/8//z//f/+////AAAAAAEAAQABAAIAAwAEAAUABwAIAAoADAANAA8AEQASABMAFAAUABQAEwARAA8ADQALAAgABgADAAIAAAD///7//f/8//v/+v/6//n/+P/3//b/9f/0//P/8//z//L/8//z//P/8v/y//H/8f/w/+7/7f/s/+z/7P/s/+3/7//y//X/+/8AAAUACgAOABEAEgATABQAFAAUABMAEgAQAA8ADgAOAA4ADQANAA0ADQANAA0ADAAMAAsACgAJAAgABwAGAAUABQAEAAMAAgABAAAA///9//v/+P/2//P/8v/w/+7/7v/t/+3/7v/v//D/8v/z//X/9v/4//n/+//8//z//f/+////AAAAAAAAAAABAAIAAwAEAAUABgAHAAkACgAMAA0ADwAQABEAEgASABEAEQAPAA4ADAAKAAgABgADAAIAAAAAAP7//f/9//z//P/7//r/+f/5//j/9//2//X/9f/1//X/9f/1//X/9f/1//T/9P/z//L/8f/w/+//7//w//H/8v/z//b/+f/+/wIABgAJAAwADgAPAA8AEAAQAA8ADgANAAwADAALAAsACgAKAAoACgAKAAoACgAJAAkACAAHAAcABgAFAAQABAADAAMAAgABAAAAAAD///7//P/7//j/9//2//T/8//y//L/8//z//P/9f/2//f/+P/5//r/+//8//3//v/+////AAAAAAAAAAAAAAEAAQACAAIAAwAEAAUABgAHAAgACQAKAAsACwAMAAwADAALAAsACgAIAAcABQAEAAMAAgAAAAAA//////7//v/9//3//P/8//v/+//6//r/+v/5//n/+f/5//n/+f/5//n/+f/4//j/+P/3//b/9v/2//b/9v/3//j/+f/7//3/AAACAAUABwAIAAkACQAKAAoACQAJAAgACAAHAAcABwAGAAYABgAGAAYABgAGAAYABQAFAAUABAAEAAMAAwACAAIAAgABAAEAAQAAAAAA//////7//f/8//r/+v/5//n/+P/4//j/+f/5//n/+v/7//v//P/9//3//v/+/////////wAAAAAAAAAAAAAAAAAAAQABAAIAAgADAAMABAAEAAUABQAGAAYABwAHAAcABgAGAAYABQAEAAMAAgACAAEAAAAAAAAAAAD////////+//7//v/9//3//f/9//3//P/8//z//P/8//z//P/8//z//P/8//v/+//7//r/+v/6//r/+//7//v//P/+////AAACAAMABAAFAAUABQAFAAYABgAFAAUABAAEAAQABAAEAAQAAwADAAMAAwADAAMAAwADAAMAAgACAAIAAgABAAEAAQABAAAAAAAAAAAAAAD//////v/9//3//P/8//v/+//7//v/+//8//z//P/9//3//v/+//7/////////AAAAAAAAAAAAAAAAAAAAAAAAAAABAAEAAQACAAIAAgADAAMABAAEAAQABQAFAAUABQAEAAQABAADAAMAAgABAAEAAAAAAAAAAAAAAP///////////v/+//7//v/+//3//f/9//3//f/9//3//f/9//3//f/8//z//P/8//v/+//7//v/+//7//z//P/9//7/AAAAAAIAAwAEAAUABQAFAAUABQAFAAUABAAEAAQABAAEAAQAAwADAAMAAwADAAMAAwADAAMAAwACAAIAAgABAAEAAQABAAEAAAAAAAAAAAAAAP///v/+//3//P/8//v/+//7//v/+v/7//v/+//8//z//f/9//7//v///////////wAAAAAAAAAAAAAAAAAAAAAAAAEAAQABAAIAAgADAAMABAAEAAUABQAGAAYABgAGAAYABQAFAAQABAADAAIAAQAAAAAAAAAAAP/////////////+//7//f/9//3//f/8//z//P/8//z//P/8//z//P/8//v/+//7//v/+v/6//r/+f/5//r/+v/7//v//f/+/wAAAQADAAQABQAGAAcABwAHAAcABwAGAAYABgAFAAUABQAFAAUABQAEAAUABQAEAAQABAAEAAMAAwADAAIAAgACAAIAAQABAAEAAAAAAAAAAAD///7//f/8//v/+//6//n/+f/5//n/+f/5//r/+v/7//v//P/9//3//v/+/////////wAAAAAAAAAAAAAAAAAAAQABAAEAAgACAAMAAwAEAAUABQAGAAYABwAHAAgACAAHAAcABgAGAAUABAADAAIAAQAAAAAAAAAAAP////////7//v/+//3//f/8//z//P/7//v/+//7//v/+//7//v/+//7//v/+v/6//r/+f/4//j/+P/4//j/+f/6//v//P/+/wAAAgAEAAUABgAHAAcACAAIAAgABwAHAAcABgAGAAUABQAFAAUABQAFAAUABQAFAAUABQAEAAQABAADAAMAAgACAAIAAgABAAEAAAAAAAAAAAD///7//f/8//v/+v/6//n/+f/5//j/+f/5//n/+v/7//v//P/9//3//v/+/////////wAAAAAAAAAAAAAAAAAAAQABAAEAAgACAAIAAwAEAAQABQAFAAYABwAHAAcABwAHAAcABgAGAAUABAADAAIAAgABAAAAAAAAAP///////////v/+//7//f/9//3//f/8//z//P/8//v/+//7//z//P/7//v/+//7//v/+v/6//n/+f/5//n/+v/6//v//P/9////AAACAAMABAAFAAYABgAGAAcABwAGAAYABQAFAAUABAAEAAQABAAEAAQABAAEAAQABAAEAAMAAwADAAMAAgACAAIAAQABAAEAAQAAAAAAAAAAAP/////+//3//f/8//v/+//6//r/+v/6//v/+//7//z//P/9//3//v/+/////////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAEAAQACAAIAAwADAAQABAAEAAUABQAFAAUABQAFAAQABAADAAMAAgABAAEAAAAAAAAAAAAAAAAA//////////////7//v/+//7//v/9//3//f/9//3//f/9//3//f/9//3//f/9//z//P/8//z//P/8//z//P/9//3//v///wAAAQACAAMAAwAEAAQABAAEAAQABAAEAAMAAwADAAMAAwADAAIAAgACAAIAAgACAAIAAgACAAIAAgABAAEAAQABAAEAAQAAAAAAAAAAAAAAAAAAAAAA//////7//v/+//3//f/9//3//f/9//3//f/+//7//v/+////////////AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAQABAAEAAQACAAIAAgACAAMAAwADAAMAAgACAAIAAgACAAEAAQABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD////////////////////////+/////////////////////v/+//7//v/+//7//v/+//7//v/+//////8AAAAAAAABAAEAAQACAAIAAgACAAIAAgACAAIAAgABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/////////////+//7//v/+//7//v////////////////8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQABAAEAAQABAAEAAgACAAIAAgACAAIAAQABAAEAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/////////////////////////////////////////////+//7//v/+//7//v/+/////////wAAAAAAAAAAAQABAAEAAgACAAIAAgACAAIAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD///////////7//v/+//7//v/+//7//v//////////////AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAEAAQABAAEAAgACAAIAAgACAAIAAgACAAIAAgABAAEAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP////////////////////////////////////////7//v/+//7//v/+//7//v/+//7//v/+//7//v///wAAAAAAAAEAAQACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgABAAIAAgABAAIAAQABAAEAAQABAAEAAQABAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/////////v/+//7//v/9//3//f/+//7//v/+//7//////////////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQABAAEAAQABAAIAAgACAAIAAwADAAMAAwADAAIAAgACAAIAAQABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD///////////////////7//v/+//7//v/+//7//v/+//7//v/+//7//v/+//3//f/9//3//f/9//7//v/+////AAAAAAAAAQACAAIAAgADAAMAAwADAAMAAwACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgABAAEAAQABAAEAAQABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD////////+//7//v/+//3//f/9//3//v/+//7//v/+////////////AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAEAAQABAAEAAgACAAIAAgACAAIAAwACAAIAAgACAAIAAgABAAEAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA///////////////////////////////////////////+//7//v/+//7//v/+//7//v/+//7//v/+//7//////wAAAAAAAAEAAQACAAIAAgACAAIAAgACAAIAAgACAAIAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
   const app = document.getElementById("app");
   const fx = document.getElementById("fx");
 
@@ -236,32 +330,71 @@
     const starsEl = document.getElementById("stars");
     const scoreN = document.getElementById("scoren");
 
-    // ── 음성(TTS): 오리가 소리내어 맞힌다 ──
+    // ── 오리 목소리: 내장한 진짜 꽥 샘플을 음높이만 바꿔 재생 (TTS 아님) ──
     let voiceOn = true;
-    const synth = window.speechSynthesis || null;
-    let koVoice = null;
-    function loadVoices() {
-      if (!synth) return;
-      const vs = synth.getVoices();
-      koVoice = vs.find(v => /ko/i.test(v.lang)) || koVoice;
+    let AC = null, quackBuf = null;
+    function ensureAC() {
+      if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; } decodeQuack(); }
+      if (AC.state === "suspended") AC.resume();
     }
-    if (synth) { loadVoices(); if ("onvoiceschanged" in synth) synth.onvoiceschanged = loadVoices; }
-    function speakOut(text) {
-      if (!voiceOn || !synth) return;
+    function decodeQuack() {
+      if (!AC || quackBuf) return;
       try {
-        synth.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = "ko-KR"; if (koVoice) u.voice = koVoice;
-        u.pitch = 1.4; u.rate = 1.02; u.volume = 1;
-        synth.speak(u);
+        const bin = atob(QUACK_B64), len = bin.length, bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+        AC.decodeAudioData(bytes.buffer, function (b) { quackBuf = b; }, function () {});
       } catch (e) {}
     }
+    function playQuack(rate, when, gain) {
+      if (!voiceOn || !AC || !quackBuf) return;
+      const src = AC.createBufferSource(); src.buffer = quackBuf;
+      src.playbackRate.value = rate || 1;
+      const g = AC.createGain(); g.gain.value = gain == null ? 1 : gain;
+      src.connect(g); g.connect(AC.destination);
+      src.start(AC.currentTime + (when || 0));
+    }
+    // 글자 수만큼 "꽥꽥"으로 말하기. 물음표면 끝을 올리고, 신나면 높게, 시무룩하면 내림.
+    function speakDuck(text, opts) {
+      opts = opts || {};
+      if (!voiceOn) return;
+      ensureAC();
+      let n = (text || "").replace(/[^가-힣a-zA-Z0-9]/g, "").length;
+      if (n < 1) n = 1; if (n > 7) n = 7;
+      const step = 0.12;
+      const base = opts.happy ? 1.5 : (opts.sad ? 0.82 : 1.12);
+      for (let i = 0; i < n; i++) {
+        let rate = base + Math.sin(i * 1.1) * 0.12;
+        if (opts.question && i >= n - 2) rate += 0.16 * (i - (n - 2) + 1);
+        if (opts.sad) rate -= 0.05 * i;
+        playQuack(rate, i * step, 0.9);
+      }
+      duckTalk(n * step * 1000 + 220);
+    }
+
+    // ── 오리 기분 뱃지 + 오리 캐릭터 상태(SVG classList) ──
     const MOODMAP = { "👀": "look", "🤔": "think", "💡": "idea", "🎉": "party", "😵": "dizzy", "🌀": "spin" };
+    const MOOD2DUCK = { "👀": "look", "🤔": "think", "💡": "idea", "🎉": "dance", "😵": "dizzy", "🌀": "spin" };
+    const DUCK_STATES = ["idle", "look", "think", "idea", "dance", "dizzy", "spin"];
+    let curDuckState = "", duckTalkTO = null;
+    function setDuckState(s) {
+      if (s === curDuckState && s !== "idea" && s !== "spin") return; // idea/spin은 매번 다시 연출
+      curDuckState = s;
+      for (const x of DUCK_STATES) duck.classList.remove("s-" + x);
+      duck.getBoundingClientRect(); // 리플로우 강제 → 애니메이션 재시작
+      duck.classList.add("s-" + s);
+    }
+    function duckTalk(ms) {
+      duck.classList.add("talking");
+      clearTimeout(duckTalkTO);
+      duckTalkTO = setTimeout(function () { duck.classList.remove("talking"); }, ms || 700);
+    }
     function setMood(emoji) {
-      if (mood.textContent === emoji) return;
-      mood.textContent = emoji;
-      mood.setAttribute("data-m", MOODMAP[emoji] || "look");
-      mood.style.animation = "none"; void mood.offsetWidth; mood.style.animation = "";
+      if (mood.textContent !== emoji) {
+        mood.textContent = emoji;
+        mood.setAttribute("data-m", MOODMAP[emoji] || "look");
+        mood.style.animation = "none"; void mood.offsetWidth; mood.style.animation = "";
+      }
+      setDuckState(MOOD2DUCK[emoji] || "idle");
     }
     // 말풍선: 내용 바뀔 때마다 살짝 팝
     (new MutationObserver(() => {
@@ -309,6 +442,7 @@
     function down(e) {
       if (roundOver) return;
       e.preventDefault();
+      ensureAC(); // 첫 터치(제스처)에서 오디오 활성화
       drawing = true; cur = [[], []]; strokes.push(cur);
       const [x, y] = pos(e); cur[0].push(x); cur[1].push(y);
       ghost.style.display = "none";
@@ -375,19 +509,14 @@
     let puzzleIdx = 0;
     function thinking() {
       setMood("🤔");
-      if (duck.className.indexOf("happy") === -1) duck.className = "duck";
       const msg = PUZZLE[Math.min(puzzleIdx, PUZZLE.length - 1)];
       if (say.textContent !== msg) say.innerHTML = msg;
     }
-    // 알 것 같을 때 — 소리내어 추측
+    // 알 것 같을 때 — 꽥꽥으로 추측
     function guessOut(g) {
       setMood("💡");
       say.innerHTML = "아! 혹시 <b>" + g.label + "</b> 아니야?";
-      duck.className = "duck talk";
-      clearTimeout(sayTO);
-      sayTO = setTimeout(() => { if (!roundOver) duck.className = "duck"; }, 500);
-      quack(false);
-      speakOut("아! 혹시 " + g.label + " 아니야?");
+      speakDuck("혹시 " + g.label + " 아니야", { question: true });
     }
 
     // 고정 3행을 만들어두고 값만 갱신 → 막대가 부드럽게 늘고 깜빡임이 없다.
@@ -444,7 +573,6 @@
       ghost.textContent = EMOJI[target.cat] || "";
       ghost.style.display = "flex";
       setMood("👀");
-      duck.className = "duck";
       say.innerHTML = "무슨 그림일까~? 오리가 맞혀볼게! 👀";
       startTimer();
     }
@@ -470,11 +598,10 @@
       roundOver = true; clearInterval(timerId);
       score += 1; updateScore(true);
       setMood("🎉");
-      duck.className = "duck happy";
       say.innerHTML = "아! <b>" + target.label + "</b> 맞지?! 정답이야! 🎉";
       if (board) { board.classList.add("correct"); setTimeout(() => board.classList.remove("correct"), 950); }
-      quack(true); confetti();
-      speakOut(target.label + " 맞지? 정답이야!");
+      confetti();
+      speakDuck(target.label + " 맞지 정답", { happy: true });
       setTimeout(newRound, 2200);
     }
     function timeUp() {
@@ -482,7 +609,7 @@
       roundOver = true; clearInterval(timerId);
       setMood("😵");
       say.innerHTML = "으음… 모르겠다! <b>" + target.label + "</b> 였구나! 😵";
-      speakOut("으음 모르겠다! " + target.label + " 였구나!");
+      speakDuck(target.label + " 였구나", { sad: true });
       setTimeout(newRound, 2200);
     }
     function updateScore(bump) {
@@ -490,8 +617,6 @@
       starsEl.textContent = "⭐".repeat(Math.min(score, 10)) + (score > 10 ? "…" : "");
       if (bump && scoreEl) { scoreEl.classList.remove("bump"); void scoreEl.offsetWidth; scoreEl.classList.add("bump"); }
     }
-
-    let sayTO = null;
 
     // ── 버튼 ──
     document.getElementById("clear").onclick = () => {
@@ -509,28 +634,9 @@
     };
     document.getElementById("sound").onclick = (e) => {
       voiceOn = !voiceOn;
-      e.currentTarget.textContent = voiceOn ? "🔊 음성" : "🔇 음성";
-      if (!voiceOn && synth) synth.cancel();
+      e.currentTarget.textContent = voiceOn ? "🔊 소리" : "🔇 소리";
+      if (voiceOn) { ensureAC(); playQuack(1.2, 0, 0.9); } // 켤 때 반가운 꽥
     };
-
-    // ── 사운드 (간단 신디사이저 꽥) ──
-    let AC = null;
-    function quack(happy) {
-      if (!voiceOn) return;
-      try {
-        AC = AC || new (window.AudioContext || window.webkitAudioContext)();
-        const t0 = AC.currentTime;
-        const o = AC.createOscillator(), g = AC.createGain();
-        o.type = "sawtooth";
-        o.frequency.setValueAtTime(happy ? 620 : 420, t0);
-        o.frequency.exponentialRampToValueAtTime(happy ? 300 : 240, t0 + 0.18);
-        g.gain.setValueAtTime(0.0001, t0);
-        g.gain.exponentialRampToValueAtTime(0.18, t0 + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0 + (happy ? 0.3 : 0.2));
-        o.connect(g); g.connect(AC.destination);
-        o.start(t0); o.stop(t0 + 0.32);
-      } catch (e) {}
-    }
 
     // ── 색종이 ──
     const fctx = fx.getContext("2d");
@@ -564,10 +670,9 @@
     updateScore();
     newRound();
 
-    // 화면 밖 탭으로 오디오 활성화 (모바일)
-    document.body.addEventListener("touchstart", () => {
-      if (AC && AC.state === "suspended") AC.resume();
-    }, { once: true });
+    // 첫 탭에서 오디오 활성화 (모바일)
+    document.body.addEventListener("touchstart", ensureAC, { once: true });
+    document.body.addEventListener("mousedown", ensureAC, { once: true });
   }
 })();
 </script>
