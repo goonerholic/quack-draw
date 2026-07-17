@@ -482,10 +482,12 @@
       }
       return n ? { n, ext: Math.max(maxx - minx, maxy - miny) } : { n: 0, ext: 0 };
     }
-    const SURE = 0.4;        // 이 정도 확신해야 소리내어 추측 (아니면 "잘 모르겠어")
-    const MARGIN = 0.1;      // 1·2위가 이보다 가까우면 애매 → 추측 보류
-    const WIN_P = 0.55;      // 정답 확신 기준
-    const WIN_STREAK = 3;    // 목표가 "연속 3틱" 확신 1위여야 정답 (순간 오탐 방지)
+    // 카테고리가 많아(수백) softmax 확률이 얕게 퍼지므로 절대 확률보다 "목표가 명확한 1위"를 본다.
+    const SURE = 0.3;        // 이 정도면 소리내어 추측 (아니면 "잘 모르겠어")
+    const MARGIN = 0.06;     // 1·2위가 이보다 가까우면 애매 → 추측 보류
+    const WIN_P = 0.4;       // 목표가 1위 + 이 확률이면 정답
+    const WIN_MARGIN = 0.14; // 목표가 1위 + 2위를 이만큼 앞서면 (확률 낮아도) 정답
+    const WIN_STREAK = 3;    // 위 조건이 "연속 3틱" 이어져야 정답 (순간 오탐 방지)
     const SETTLE_TICKS = 4;  // 펜을 뗀 뒤 정지된 그림을 몇 번 더 살펴본다
     let lastSpoken = null, winStreak = 0, settle = 0;
     setInterval(() => {
@@ -502,8 +504,10 @@
       renderGuesses(top);
       const g = top[0], g2 = top[1];
       if (!g) return;
-      // 정답: 목표가 확신 1위인 상태가 연속으로 이어질 때만
-      if (g.cat === target.cat && g.p > WIN_P) {
+      // 정답 인정: 목표가 (a) 명확한 1위이거나 (b) 1위와 아주 근소한 2위 → 연속 이어질 때
+      const targetTop = g.cat === target.cat && (g.p > WIN_P || (g2 && g.p - g2.p > WIN_MARGIN));
+      const targetClose2 = g2 && g2.cat === target.cat && g2.p > 0.22 && (g.p - g2.p) < 0.08;
+      if (targetTop || targetClose2) {
         if (++winStreak >= WIN_STREAK) { win(); return; }
       } else {
         winStreak = 0;
